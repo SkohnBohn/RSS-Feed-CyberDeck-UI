@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sky</title>
+  <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <span class="app-name">Sky</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/inbox" class="nav-item {% if section == 'inbox' %}active{% endif %}">
+        <span>Inbox</span>
+        {% if counts.unread %}<span class="nav-count">{{ counts.unread }}</span>{% endif %}
+      </a>
+      <a href="/flagged" class="nav-item {% if section == 'flagged' %}active{% endif %}">
+        <span>Flagged</span>
+        {% if counts.flagged %}<span class="nav-count">{{ counts.flagged }}</span>{% endif %}
+      </a>
+      <a href="/interesting" class="nav-item {% if section == 'interesting' %}active{% endif %}">
+        <span>Interesting</span>
+        {% if counts.interesting %}<span class="nav-count">{{ counts.interesting }}</span>{% endif %}
+      </a>
+      <a href="/read-later" class="nav-item {% if section == 'read-later' %}active{% endif %}">
+        <span>Read Later</span>
+        {% if counts.read_later %}<span class="nav-count">{{ counts.read_later }}</span>{% endif %}
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <button class="fetch-btn" id="fetch-btn" onclick="triggerFetch()">
+        {% if fetch_running %}Fetching…{% else %}Fetch Now{% endif %}
+      </button>
+      <div class="total-count">
+        {{ (counts.unread + counts.flagged + counts.interesting + counts.read_later) }}<span class="total-label"> art.</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

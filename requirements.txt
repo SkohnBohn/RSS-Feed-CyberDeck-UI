@@ -1,0 +1,4 @@
+flask
+feedparser
+httpx
+apscheduler

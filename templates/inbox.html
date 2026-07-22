@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="view-header">
+  <h2 class="view-title">{{ label }}</h2>
+  <span class="view-count">{{ articles | length }} article{% if articles | length != 1 %}s{% endif %}</span>
+</div>
+
+<div class="article-list" id="article-list">
+
+  {% if not articles %}
+  <div class="empty-state">
+    {% if fetch_running %}
+      <p>Fetching articles — check back in a moment.</p>
+    {% else %}
+      <p>Nothing here.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% for a in articles %}
+  <article class="card" id="card-{{ a.id }}">
+    <div class="card-header">
+      <span class="lang-chip">{{ (a.language or 'en') | upper }}</span>
+      {% if a.url %}
+        <a class="card-title" href="{{ a.url }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+      {% else %}
+        <span class="card-title">{{ a.title }}</span>
+      {% endif %}
+      <span class="card-date">{{ a.date_published[:7] if a.date_published else '' }}</span>
+    </div>
+
+    <div class="card-meta">
+      {{ a.authors or '—' }}{% if a.journal %} · <em>{{ a.journal }}</em>{% endif %}
+    </div>
+
+    {% if a.abstract %}
+    <div class="card-abstract">
+      {{ a.abstract[:300] }}{% if a.abstract | length > 300 %}…{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card-actions">
+
+      {% if section != 'flagged' %}
+      <button class="btn btn-icon" title="Flag"
+        hx-post="/action/{{ a.id }}/flag"
+        hx-target="#card-{{ a.id }}"
+        hx-swap="outerHTML swap:150ms">★</button>
+      {% endif %}
+
+      {% if section != 'interesting' %}
+      <button class="btn"
+        hx-post="/action/{{ a.id }}/interesting"
+        hx-target="#card-{{ a.id }}"
+        hx-swap="outerHTML swap:150ms">Interesting</button>
+      {% endif %}
+
+      {% if section != 'read-later' %}
+      <button class="btn"
+        hx-post="/action/{{ a.id }}/read_later"
+        hx-target="#card-{{ a.id }}"
+        hx-swap="outerHTML swap:150ms">Read Later</button>
+      {% endif %}
+
+      {% if section != 'inbox' %}
+      <button class="btn btn-ghost"
+        hx-post="/action/{{ a.id }}/unread"
+        hx-target="#card-{{ a.id }}"
+        hx-swap="outerHTML swap:150ms">← Inbox</button>
+      {% endif %}
+
+      <button class="btn btn-delete" title="Delete"
+        hx-post="/action/{{ a.id }}/delete"
+        hx-target="#card-{{ a.id }}"
+        hx-swap="outerHTML swap:150ms">✕</button>
+
+    </div>
+  </article>
+  {% endfor %}
+
+</div>
+
+{% endblock %}
