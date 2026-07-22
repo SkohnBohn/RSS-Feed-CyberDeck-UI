@@ -30,6 +30,9 @@
         <span>Read Later</span>
         {% if counts.read_later %}<span class="nav-count">{{ counts.read_later }}</span>{% endif %}
       </a>
+      <a href="/settings" class="nav-item {% if section == 'settings' %}active{% endif %}">
+        <span>Settings</span>
+      </a>
     </nav>
 
     <div class="sidebar-bottom">

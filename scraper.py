@@ -4,11 +4,10 @@ import httpx
 from datetime import datetime, timedelta, timezone
 
 import db
-from keywords import CORE_EN, CORE_DE, BASE_QUERY_EN, BASE_QUERY_DE, RSS_FEEDS
 
 OPENALEX_URL = "https://api.openalex.org/works"
-BASE_URL = "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi"
-MAILTO = "lara.poppy@proton.me"
+BASE_URL     = "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi"
+MAILTO       = "lara.poppy@proton.me"
 
 
 def _date_from(days_back):
@@ -31,56 +30,56 @@ def _reconstruct_abstract(inverted_index):
 
 
 def fetch_openalex(days_back=7):
-    count = 0
+    count     = 0
     date_from = _date_from(days_back)
+    query_en  = db.get_setting("query_openalex_en", "surrealism OR surrealist")
+    query_de  = db.get_setting("query_openalex_de", "Surrealismus OR surrealistisch")
 
-    for query, lang in [(CORE_EN, "en"), (CORE_DE, "de")]:
+    for query, lang in [(query_en, "en"), (query_de, "de")]:
         cursor = "*"
         while cursor:
             try:
                 resp = httpx.get(
                     OPENALEX_URL,
                     params={
-                        "search": query,
-                        "filter": f"from_publication_date:{date_from}",
+                        "search":  query,
+                        "filter":  f"from_publication_date:{date_from}",
                         "per-page": 100,
-                        "cursor": cursor,
-                        "sort": "publication_date:desc",
-                        "mailto": MAILTO,
+                        "cursor":  cursor,
+                        "sort":    "publication_date:desc",
+                        "mailto":  MAILTO,
                     },
                     timeout=30,
                 )
                 resp.raise_for_status()
-                data = resp.json()
+                data  = resp.json()
                 works = data.get("results", [])
                 if not works:
                     break
 
                 for w in works:
-                    doi = w.get("doi") or w.get("id")
-                    title = w.get("display_name", "")
+                    doi     = w.get("doi") or w.get("id")
+                    title   = w.get("display_name", "")
                     authors = ", ".join(
                         a.get("author", {}).get("display_name", "")
                         for a in w.get("authorships", [])[:5]
                     )
-                    loc = w.get("primary_location") or {}
-                    src = loc.get("source") or {}
-                    journal = src.get("display_name", "")
+                    loc      = w.get("primary_location") or {}
+                    src      = loc.get("source") or {}
+                    journal  = src.get("display_name", "")
                     pub_date = w.get("publication_date", "")
-                    year = w.get("publication_year")
+                    year     = w.get("publication_year")
                     abstract = _reconstruct_abstract(w.get("abstract_inverted_index"))
-                    url = loc.get("landing_page_url") or w.get("id", "")
-                    detected_lang = w.get("language") or lang
+                    url      = loc.get("landing_page_url") or w.get("id", "")
+                    det_lang = w.get("language") or lang
 
-                    if db.insert_article(
-                        doi, title, authors, journal, year, pub_date,
-                        abstract, url, detected_lang, "openalex",
-                    ):
+                    if db.insert_article(doi, title, authors, journal, year,
+                                         pub_date, abstract, url, det_lang, "openalex"):
                         count += 1
 
-                meta = data.get("meta", {})
+                meta        = data.get("meta", {})
                 next_cursor = meta.get("next_cursor")
-                cursor = next_cursor if (next_cursor and len(works) == 100) else None
+                cursor      = next_cursor if (next_cursor and len(works) == 100) else None
 
             except Exception as e:
                 print(f"[OpenAlex] error ({lang}): {e}")
@@ -90,65 +89,52 @@ def fetch_openalex(days_back=7):
 
 
 def fetch_base(days_back=7):
-    count = 0
+    count     = 0
     date_from = _date_from(days_back)
+    q_en      = db.get_setting("query_base_en", "surrealis*")
+    q_de      = db.get_setting("query_base_de", "Surrealismus OR surrealistisch OR Surrealisten")
 
     queries = [
-        (f"{BASE_QUERY_EN} AND dcdate:[{date_from} TO *]", "en"),
-        (f"({BASE_QUERY_DE}) AND dclanguage:ger AND dcdate:[{date_from} TO *]", "de"),
+        (f"{q_en} AND dcdate:[{date_from} TO *]",                              "en"),
+        (f"({q_de}) AND dclanguage:ger AND dcdate:[{date_from} TO *]",         "de"),
     ]
 
     for query, lang in queries:
         try:
             resp = httpx.get(
                 BASE_URL,
-                params={
-                    "func": "PerformSearch",
-                    "query": query,
-                    "hits": 100,
-                    "offset": 0,
-                    "format": "json",
-                },
+                params={"func": "PerformSearch", "query": query,
+                        "hits": 100, "offset": 0, "format": "json"},
                 timeout=30,
             )
             resp.raise_for_status()
-            data = resp.json()
-            docs = data.get("response", {}).get("docs", [])
+            docs = resp.json().get("response", {}).get("docs", [])
 
             for doc in docs:
                 identifiers = doc.get("dcidentifier") or []
-                doi = next((i for i in identifiers if "doi" in i.lower()), None) or (identifiers[0] if identifiers else None)
+                doi = (next((i for i in identifiers if "doi" in i.lower()), None)
+                       or (identifiers[0] if identifiers else None))
 
                 title_list = doc.get("dctitle") or []
                 title = title_list[0] if title_list else ""
                 if not title:
                     continue
 
-                creators = doc.get("dccreator") or []
-                authors = ", ".join(creators[:5])
-
-                publishers = doc.get("dcpublisher") or []
-                journal = publishers[0] if publishers else ""
-
-                dates = doc.get("dcdate") or []
+                authors  = ", ".join((doc.get("dccreator") or [])[:5])
+                pubs     = doc.get("dcpublisher") or []
+                journal  = pubs[0] if pubs else ""
+                dates    = doc.get("dcdate") or []
                 pub_date = dates[0] if dates else ""
-                year = int(pub_date[:4]) if pub_date and pub_date[:4].isdigit() else None
-
-                descriptions = doc.get("dcdescription") or []
-                abstract = _strip_html(descriptions[0]) if descriptions else None
-
-                links = doc.get("dclink") or []
-                url = links[0] if links else ""
-
+                year     = int(pub_date[:4]) if pub_date and pub_date[:4].isdigit() else None
+                descs    = doc.get("dcdescription") or []
+                abstract = _strip_html(descs[0]) if descs else None
+                links    = doc.get("dclink") or []
+                url      = links[0] if links else ""
                 raw_lang = (doc.get("dclanguage") or [lang])[0]
-                detected_lang = {"ger": "de", "eng": "en", "deu": "de"}.get(raw_lang, raw_lang[:2])
+                det_lang = {"ger": "de", "eng": "en", "deu": "de"}.get(raw_lang, raw_lang[:2])
 
-                uid = doi or url or title
-
-                if db.insert_article(
-                    uid, title, authors, journal, year, pub_date,
-                    abstract, url, detected_lang, "base",
-                ):
+                if db.insert_article(doi or url or title, title, authors, journal,
+                                     year, pub_date, abstract, url, det_lang, "base"):
                     count += 1
 
         except Exception as e:
@@ -158,14 +144,14 @@ def fetch_base(days_back=7):
 
 
 def fetch_rss(days_back=7):
-    count = 0
+    count  = 0
     cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-    for feed_info in RSS_FEEDS:
+    for feed_info in db.get_feeds():
         try:
             feed = feedparser.parse(feed_info["url"])
             if feed.bozo and not feed.entries:
-                print(f"[RSS] failed to parse: {feed_info['name']}")
+                print(f"[RSS] failed: {feed_info['name']}")
                 continue
 
             for entry in feed.entries:
@@ -175,33 +161,26 @@ def fetch_rss(days_back=7):
                     if pub_dt < cutoff:
                         continue
                     pub_date = pub_dt.strftime("%Y-%m-%d")
-                    year = pub_dt.year
+                    year     = pub_dt.year
                 else:
                     pub_date = ""
-                    year = None
+                    year     = None
 
-                doi = entry.get("prism_doi") or entry.get("dc_identifier") or entry.get("id")
-                title = _strip_html(entry.get("title", ""))
+                doi     = entry.get("prism_doi") or entry.get("dc_identifier") or entry.get("id")
+                title   = _strip_html(entry.get("title", ""))
                 if not title:
                     continue
 
-                authors = ", ".join(
-                    a.get("name", "") for a in entry.get("authors", [])
-                ) or entry.get("author", "")
+                authors  = (", ".join(a.get("name", "") for a in entry.get("authors", []))
+                            or entry.get("author", ""))
+                content  = (entry.get("content") or [{}])[0].get("value", "")
+                abstract = _strip_html(entry.get("summary", "") or content) or None
+                url      = entry.get("link", "")
+                journal  = feed_info["name"]
+                lang     = feed_info.get("lang", "en")
 
-                raw_summary = entry.get("summary", "")
-                content_list = entry.get("content", [{}])
-                raw_content = content_list[0].get("value", "") if content_list else ""
-                abstract = _strip_html(raw_summary or raw_content) or None
-
-                url = entry.get("link", "")
-                journal = feed_info["name"]
-                lang = feed_info.get("lang", "en")
-
-                if db.insert_article(
-                    doi or url, title, authors, journal, year, pub_date,
-                    abstract, url, lang, f"rss_{journal}",
-                ):
+                if db.insert_article(doi or url, title, authors, journal, year,
+                                     pub_date, abstract, url, lang, f"rss_{journal}"):
                     count += 1
 
         except Exception as e:
