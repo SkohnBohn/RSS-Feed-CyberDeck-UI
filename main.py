@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     window = webview.create_window(
         title="Surrealism Papers Dashboard",
-        url="http://localhost:5000",
+        url="http://127.0.0.1:5000",
         width=1280,
         height=820,
         min_size=(900, 600),
