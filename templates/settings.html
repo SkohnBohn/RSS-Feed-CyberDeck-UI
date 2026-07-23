@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="view-header">
+  <h2 class="view-title">Settings</h2>
+</div>
+
+{% if saved %}
+<div class="banner">Queries saved.</div>
+{% endif %}
+
+<!-- ── API Queries ── -->
+<form method="POST" action="/settings/queries">
+  <section class="settings-section">
+    <h3 class="settings-heading">API Queries</h3>
+    <p class="settings-note">
+      OpenAlex uses plain keyword terms (supports OR). BASE supports Solr wildcards — <code>surrealis*</code> matches all variants.
+    </p>
+
+    <div class="field-group">
+      <div class="field">
+        <label class="field-label">OpenAlex — English</label>
+        <input class="field-input" type="text" name="query_openalex_en"
+               value="{{ settings.get('query_openalex_en', '') }}">
+      </div>
+      <div class="field">
+        <label class="field-label">OpenAlex — German</label>
+        <input class="field-input" type="text" name="query_openalex_de"
+               value="{{ settings.get('query_openalex_de', '') }}">
+      </div>
+      <div class="field">
+        <label class="field-label">BASE — English</label>
+        <input class="field-input" type="text" name="query_base_en"
+               value="{{ settings.get('query_base_en', '') }}">
+      </div>
+      <div class="field">
+        <label class="field-label">BASE — German</label>
+        <input class="field-input" type="text" name="query_base_de"
+               value="{{ settings.get('query_base_de', '') }}">
+      </div>
+    </div>
+
+    <button class="btn btn-save" type="submit">Save Queries</button>
+  </section>
+</form>
+
+<!-- ── RSS Feeds ── -->
+<section class="settings-section">
+  <h3 class="settings-heading">RSS Feeds</h3>
+  <p class="settings-note">
+    RSS feeds pull everything a journal publishes, filtered by date. No keyword matching.
+  </p>
+
+  <div class="feed-list" id="feed-list">
+    {% for feed in feeds %}
+    <div class="feed-row" id="feed-{{ feed.id }}">
+      <span class="lang-chip">{{ feed.lang | upper }}</span>
+      <span class="feed-name">{{ feed.name }}</span>
+      <span class="feed-url">{{ feed.url }}</span>
+      <button class="btn btn-delete" title="Remove"
+        hx-post="/settings/feeds/{{ feed.id }}/delete"
+        hx-target="#feed-{{ feed.id }}"
+        hx-swap="outerHTML swap:150ms">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Add feed form -->
+  <form method="POST" action="/settings/feeds/add" class="add-feed-form">
+    <input class="field-input" type="text"   name="name" placeholder="Journal name" required>
+    <input class="field-input" type="url"    name="url"  placeholder="RSS feed URL" required>
+    <select class="field-input field-select" name="lang">
+      <option value="en">EN</option>
+      <option value="de">DE</option>
+    </select>
+    <button class="btn" type="submit">Add Feed</button>
+  </form>
+</section>
+
+{% endblock %}

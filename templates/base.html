@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sky</title>
-  <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -29,6 +28,9 @@
       <a href="/read-later" class="nav-item {% if section == 'read-later' %}active{% endif %}">
         <span>Read Later</span>
         {% if counts.read_later %}<span class="nav-count">{{ counts.read_later }}</span>{% endif %}
+      </a>
+      <a href="/settings" class="nav-item {% if section == 'settings' %}active{% endif %}">
+        <span>Settings</span>
       </a>
     </nav>
 

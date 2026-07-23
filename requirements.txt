@@ -2,3 +2,4 @@ flask
 feedparser
 httpx
 apscheduler
+pywebview

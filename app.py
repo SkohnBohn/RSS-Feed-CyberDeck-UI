@@ -1,7 +1,7 @@
 import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, redirect, render_template, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 import db
 import scraper
@@ -54,7 +54,7 @@ def view(section):
         return redirect(url_for("view", section="inbox"))
     status, label = VIEWS[section]
     articles = db.get_articles(status=status)
-    counts = db.get_counts()
+    counts   = db.get_counts()
     return render_template(
         "inbox.html",
         articles=articles,
@@ -89,10 +89,47 @@ def fetch_now():
 
 @app.route("/fetch-status")
 def fetch_status():
-    return jsonify({
-        "running": fetch_state["running"],
-        "last_count": fetch_state["last_count"],
-    })
+    return jsonify({"running": fetch_state["running"], "last_count": fetch_state["last_count"]})
+
+
+# ── Settings ────────────────────────────────────────────────────────────────
+
+@app.route("/settings")
+def settings():
+    return render_template(
+        "settings.html",
+        section="settings",
+        counts=db.get_counts(),
+        fetch_running=fetch_state["running"],
+        settings=db.get_all_settings(),
+        feeds=db.get_feeds(),
+        saved=request.args.get("saved"),
+    )
+
+
+@app.route("/settings/queries", methods=["POST"])
+def save_queries():
+    for key in ("query_openalex_en", "query_openalex_de", "query_base_en", "query_base_de"):
+        value = request.form.get(key, "").strip()
+        if value:
+            db.set_setting(key, value)
+    return redirect(url_for("settings", saved="1"))
+
+
+@app.route("/settings/feeds/add", methods=["POST"])
+def add_feed():
+    name = request.form.get("name", "").strip()
+    url  = request.form.get("url", "").strip()
+    lang = request.form.get("lang", "en").strip()
+    if name and url:
+        db.add_feed(name, url, lang)
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/feeds/<int:feed_id>/delete", methods=["POST"])
+def delete_feed(feed_id):
+    db.delete_feed(feed_id)
+    return "", 204
 
 
 if __name__ == "__main__":
