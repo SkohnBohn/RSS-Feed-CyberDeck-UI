@@ -1889,6 +1889,106 @@
   );
 }
 
+/* ── Inbox / queue view header (Flagged, Interesting, Read) ─────────────── */
+
+[data-theme="fui"] .fui-view-hdr {
+  flex-shrink:    0;
+  border-bottom:  1px solid var(--p4);
+  padding:        10px 20px 0;
+  margin-bottom:  12px;
+}
+[data-theme="fui"] .fui-view-hdr-top {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     baseline;
+  gap:             12px;
+  margin-bottom:   4px;
+}
+[data-theme="fui"] .fui-view-hdr-label {
+  font-family:    var(--pdisplay);
+  font-size:      28px;
+  color:          var(--p1);
+  letter-spacing: 0.06em;
+  text-shadow:    0 0 10px rgba(180,184,255,0.35);
+  line-height:    1;
+}
+[data-theme="fui"] .fui-view-hdr-count {
+  font-family:    var(--pdisplay);
+  font-size:      20px;
+  color:          var(--p3);
+  letter-spacing: 0.1em;
+  line-height:    1;
+  opacity:        0.9;
+}
+[data-theme="fui"] .fui-view-hdr-strip {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.18em;
+  color:          var(--p5);
+  text-transform: uppercase;
+  padding-bottom: 6px;
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+}
+
+/* ── Settings view ───────────────────────────────────────────────────────── */
+
+[data-theme="fui"] .fui-settings-section {
+  padding:       0 20px 20px;
+  border-bottom: 1px solid var(--p5);
+  margin-bottom: 16px;
+}
+[data-theme="fui"] .fui-settings-section:last-child { border-bottom: none; }
+
+[data-theme="fui"] .fui-settings-hdr {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.26em;
+  color:          var(--p5);
+  text-transform: uppercase;
+  margin-bottom:  8px;
+  padding-bottom: 4px;
+  border-bottom:  1px solid var(--p5);
+  display:        flex;
+  justify-content: space-between;
+}
+[data-theme="fui"] .fui-settings-hdr-tag {
+  color:          var(--p4);
+  font-size:      6px;
+  letter-spacing: 0.16em;
+}
+
+[data-theme="fui"] .fui-settings-note {
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.06em;
+  color:          var(--p4);
+  margin-bottom:  10px;
+  line-height:    1.6;
+}
+[data-theme="fui"] .fui-settings-note code {
+  color:          var(--p3);
+  font-family:    var(--pfont);
+  font-size:      8px;
+  border:         1px solid var(--p5);
+  padding:        0 3px;
+}
+
+[data-theme="fui"] .fui-banner {
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.18em;
+  color:          var(--p2);
+  background:     rgba(180,184,255,0.06);
+  border:         1px solid var(--p3);
+  padding:        6px 20px;
+  margin:         0 20px 12px;
+  text-shadow:    0 0 6px rgba(180,184,255,0.4);
+}
+[data-theme="fui"] .fui-banner::before { content: '[ '; }
+[data-theme="fui"] .fui-banner::after  { content: ' ]'; }
+
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 /* CPU canvas (startSysMetrics) is data — JS respects this flag and stops
    glitch effects but keeps the live graph. All CSS flicker/sweep stops. */

@@ -1,10 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% if ui_theme == 'fui' %}
+<div class="fui-view-hdr">
+  <div class="fui-view-hdr-top">
+    <span class="fui-view-hdr-label">
+      {%- if section == 'flagged' %}// QUEUE_01 / FLAG
+      {%- elif section == 'interesting' %}// QUEUE_02 / INT
+      {%- elif section == 'read' %}// ARCHIVE / LOG
+      {%- else %}// RECORD_QUEUE{%- endif %}
+    </span>
+    <span class="fui-view-hdr-count">BUF:{{ '%04d' % articles|length }}</span>
+  </div>
+  <div class="fui-view-hdr-strip">
+    NODE_07 ·· AUTH:PASS ·· STATUS:NOMINAL ·· RECORDS:{{ articles|length }} ·· CRC:{{ '%04X' % (articles|length * 137 + 0x4A2F) }}
+  </div>
+</div>
+
+{% else %}
 <div class="view-header">
   <h2 class="view-title">{{ label }}</h2>
   <span class="view-meta">{{ articles | length }} item{% if articles | length != 1 %}s{% endif %}</span>
 </div>
+{% endif %}
 
 <div class="article-list" id="article-list"
      data-emphasize="{{ keywords | selectattr('mode','equalto','emphasize') | map(attribute='keyword') | join(',') }}"
@@ -13,9 +31,9 @@
   {% if not articles %}
   <div class="empty-state">
     {% if fetch_running %}
-      <p>Fetching — check back in a moment.</p>
+      {% if ui_theme == 'fui' %}<p>SYNC_ACTIVE / STANDBY</p>{% else %}<p>Fetching — check back in a moment.</p>{% endif %}
     {% else %}
-      <p>Nothing here.</p>
+      {% if ui_theme == 'fui' %}<p>BUF_EMPTY / 0x0000</p>{% else %}<p>Nothing here.</p>{% endif %}
     {% endif %}
   </div>
   {% endif %}
@@ -54,37 +72,37 @@
 
     <div class="card-actions">
       {% if section != 'flagged' %}
-      <button class="btn btn-flag" title="Flagged — read, important (F)"
+      <button class="btn btn-flag" title="Flag (F)"
         hx-post="/action/{{ a.id }}/flag"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">★ Flag</button>
+        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[F] FLAG{% else %}★ Flag{% endif %}</button>
       {% endif %}
 
       {% if section != 'interesting' %}
-      <button class="btn" title="Interesting — might read (I)"
+      <button class="btn" title="Queue as interesting (I)"
         hx-post="/action/{{ a.id }}/interesting"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">Interesting</button>
+        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[I] QUEUE{% else %}Interesting{% endif %}</button>
       {% endif %}
 
       {% if section != 'read' %}
-      <button class="btn btn-read" title="Mark read (R)"
+      <button class="btn btn-read" title="Archive / mark read (R)"
         hx-post="/action/{{ a.id }}/read"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">✓ Read</button>
+        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[R] ARCHIVE{% else %}✓ Read{% endif %}</button>
       {% endif %}
 
       {% if section != 'river' %}
       <button class="btn btn-ghost"
         hx-post="/action/{{ a.id }}/unread"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">← River</button>
+        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}RESTORE ──{% else %}← River{% endif %}</button>
       {% endif %}
 
       <button class="btn btn-delete" title="Delete"
         hx-post="/action/{{ a.id }}/delete"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">✕</button>
+        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[DEL] PURGE{% else %}✕{% endif %}</button>
     </div>
   </article>
   {% endfor %}
