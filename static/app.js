@@ -341,10 +341,28 @@ function _fuiSelectRow(row) {
   const a   = _fuiArticles[idx];
   if (!a) return;
 
+  // Pre-compute derived values — used immediately in header/aux AND later in KV block
+  const crcHex   = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
+  const fileId   = `0x${(a.id * 0x1A3).toString(16).toUpperCase().slice(-8)}`;
+  const revision = String((a.id % 23) + 1).padStart(2, '0');
+  const sectorNum = String(a.id % 8 + 1).padStart(2, '0');
+  const sector   = `SEC_${sectorNum}`;
+  const tMs      = (3.1 + (a.id % 17) * 0.3).toFixed(3);
+
+  // Update header strip with real record values
+  const stripEl = document.getElementById('fui-detail-hdr-strip');
+  if (stripEl) stripEl.textContent =
+    `UID_${a.id.toString(16).toUpperCase().padStart(8,'0')} ·· CRC:${crcHex} ·· RECV:OK ·· T:${tMs}ms ·· NODE_07 ·· AUTH:PASS`;
+
+  // Update detail-id badge + aux column fields
   const idEl = document.getElementById('fui-detail-id');
-  if (idEl) idEl.textContent = `UID:${a.id.toString(16).toUpperCase().padStart(6,'0')} / SEC_04`;
-  const stateEl = document.getElementById('fui-aux-state');
-  if (stateEl) stateEl.textContent = 'ACT';
+  if (idEl) idEl.textContent = `UID:${a.id.toString(16).toUpperCase().padStart(6,'0')} / ${sector}`;
+  const stateEl  = document.getElementById('fui-aux-state');
+  if (stateEl)  stateEl.textContent  = 'ACT';
+  const revEl    = document.getElementById('fui-aux-rev');
+  if (revEl)    revEl.textContent    = revision;
+  const secEl    = document.getElementById('fui-aux-sector');
+  if (secEl)    secEl.textContent    = sectorNum;
 
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;
@@ -367,10 +385,6 @@ function _fuiSelectRow(row) {
       const srcStr   = (a.source   || 'UNKNOWN').toUpperCase().slice(0, 24);
       const dateStr  = a.date_published ? a.date_published.slice(0, 10).replace(/-/g, '.') : '????.??.??';
       const doiStr   = a.doi ? a.doi.slice(0, 40) : 'NULL';
-      const crcHex   = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
-      const fileId   = `0x${(a.id * 0x1A3).toString(16).toUpperCase().slice(-8)}`;
-      const revision = String((a.id % 23) + 1).padStart(2, '0');
-      const sector   = `SEC_${String(a.id % 8 + 1).padStart(2, '0')}`;
 
       const titleHtml = a.url
         ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
@@ -452,9 +466,17 @@ function _fuiTriage(row, action) {
       if (next) _fuiSelectRow(next);
       else {
         const scroll = document.getElementById('fui-detail-scroll');
-        if (scroll) scroll.innerHTML = '<div class="fui-detail-empty">BUFFER_EMPTY / 0x0000</div>';
-        const idEl = document.getElementById('fui-detail-id');
-        if (idEl) idEl.textContent = '[ -- ]';
+        if (scroll) { scroll.innerHTML = '<div class="fui-detail-empty">BUFFER_EMPTY / 0x0000</div>'; delete scroll.dataset.watermark; }
+        const idEl    = document.getElementById('fui-detail-id');
+        if (idEl)    idEl.textContent    = '[ AWAIT_SEL ]';
+        const stripEl = document.getElementById('fui-detail-hdr-strip');
+        if (stripEl) stripEl.textContent = 'UID_00000000 ·· CRC:0x000000 ·· RECV:OK ·· T:00.000ms ·· NODE_07 ·· AUTH:PASS';
+        const stateEl = document.getElementById('fui-aux-state');
+        if (stateEl) stateEl.textContent = 'RDY';
+        const revEl   = document.getElementById('fui-aux-rev');
+        if (revEl)   revEl.textContent   = '--';
+        const secEl   = document.getElementById('fui-aux-sector');
+        if (secEl)   secEl.textContent   = '--';
         _fuiActive = null;
       }
     }, 160);
