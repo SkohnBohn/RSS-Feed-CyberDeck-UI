@@ -28,10 +28,11 @@
     <div class="sidebar-top">
       {% if ui_theme == 'fui' %}
         <span class="app-name">SKY.SYS</span>
-        <span class="app-subtitle">ARTICLE INTAKE // v2.4</span>
+        <span class="app-subtitle">DOC PROCESSING UNIT</span>
+        <span class="app-subtitle" style="letter-spacing:0.16em;margin-top:1px">ARCHIVE DIV.04</span>
         <span class="app-status">
           <span class="app-status-dot"></span>
-          LINK ESTABLISHED
+          NODE_UPLINK / ACTIVE
         </span>
       {% else %}
         <span class="app-name">Sky</span>
@@ -51,19 +52,19 @@
 
     <nav class="sidebar-nav">
       <a href="/river" class="nav-item {% if section == 'river' %}active{% endif %}">
-        <span>River</span>
+        <span>{% if ui_theme == 'fui' %}NODE_STREAM{% else %}River{% endif %}</span>
         {% if counts.unread %}<span class="nav-count">{{ counts.unread }}</span>{% endif %}
       </a>
       <a href="/flagged" class="nav-item {% if section == 'flagged' %}active{% endif %}">
-        <span>Flagged</span>
+        <span>{% if ui_theme == 'fui' %}QUEUE_01 / FLAG{% else %}Flagged{% endif %}</span>
         {% if counts.flagged %}<span class="nav-count">{{ counts.flagged }}</span>{% endif %}
       </a>
       <a href="/interesting" class="nav-item {% if section == 'interesting' %}active{% endif %}">
-        <span>Interesting</span>
+        <span>{% if ui_theme == 'fui' %}QUEUE_02 / INT{% else %}Interesting{% endif %}</span>
         {% if counts.interesting %}<span class="nav-count">{{ counts.interesting }}</span>{% endif %}
       </a>
       <a href="/read" class="nav-item {% if section == 'read' %}active{% endif %}">
-        <span>Read</span>
+        <span>{% if ui_theme == 'fui' %}ARCHIVE{% else %}Read{% endif %}</span>
       </a>
 
       {% if collections %}
@@ -77,7 +78,7 @@
 
       <div class="nav-divider"></div>
       <a href="/settings" class="nav-item {% if section == 'settings' %}active{% endif %}">
-        <span>Settings</span>
+        <span>{% if ui_theme == 'fui' %}CFG / SYS{% else %}Settings{% endif %}</span>
       </a>
     </nav>
 
@@ -91,7 +92,7 @@
 
     {% if ui_theme == 'fui' %}
     <div class="fui-dossier" id="fui-dossier">
-      <div class="fui-dossier-hdr">// SUBJECT FILE</div>
+      <div class="fui-dossier-hdr">// SUBJ FILE / CLASS_B</div>
       <div class="fui-dossier-img-wrap">
         <div class="fui-dossier-img" id="fui-dossier-img"></div>
         <div class="fui-dossier-overlay" id="fui-dossier-overlay" aria-hidden="true"></div>
@@ -106,7 +107,11 @@
 
     <div class="sidebar-bottom">
       <button class="fetch-btn" id="fetch-btn" onclick="triggerFetch()">
-        {% if fetch_running %}Fetching…{% else %}Fetch Now{% endif %}
+        {% if ui_theme == 'fui' %}
+          {% if fetch_running %}SYNC… ▒▒▒▒{% else %}SYNC_INIT ──►{% endif %}
+        {% else %}
+          {% if fetch_running %}Fetching…{% else %}Fetch Now{% endif %}
+        {% endif %}
       </button>
     </div>
   </aside>

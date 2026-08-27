@@ -29,26 +29,55 @@ document.addEventListener('click', async (e) => {
 async function triggerFetch() {
   const btn = document.getElementById('fetch-btn');
   if (!btn || btn.disabled) return;
-  btn.disabled    = true;
-  btn.textContent = 'Fetching…';
-  try {
-    await fetch('/fetch', { method: 'POST' });
-  } catch {
-    btn.disabled    = false;
-    btn.textContent = 'Fetch Now';
-    return;
-  }
-  const poll = setInterval(async () => {
+  btn.disabled = true;
+  const isFui = document.documentElement.dataset.theme === 'fui';
+  if (isFui) {
+    // Animated sync progress for FUI
+    const frames = ['SYNC ▒░░░', 'SYNC ▒▒░░', 'SYNC ▒▒▒░', 'SYNC ▒▒▒▒'];
+    let fi = 0;
+    btn.textContent = frames[0];
+    const anim = setInterval(() => { fi = (fi + 1) % frames.length; btn.textContent = frames[fi]; }, 400);
     try {
-      const data = await fetch('/fetch-status').then(r => r.json());
-      if (!data.running) { clearInterval(poll); window.location.reload(); }
-    } catch (_) {}
-  }, 2000);
+      await fetch('/fetch', { method: 'POST' });
+    } catch {
+      clearInterval(anim);
+      btn.disabled    = false;
+      btn.textContent = 'SYNC_INIT ──►';
+      return;
+    }
+    const poll = setInterval(async () => {
+      try {
+        const data = await fetch('/fetch-status').then(r => r.json());
+        if (!data.running) {
+          clearInterval(poll);
+          clearInterval(anim);
+          btn.textContent = 'SYNC_OK';
+          setTimeout(() => window.location.reload(), 2000);
+        }
+      } catch (_) {}
+    }, 2000);
+  } else {
+    btn.textContent = 'Fetching…';
+    try {
+      await fetch('/fetch', { method: 'POST' });
+    } catch {
+      btn.disabled    = false;
+      btn.textContent = 'Fetch Now';
+      return;
+    }
+    const poll = setInterval(async () => {
+      try {
+        const data = await fetch('/fetch-status').then(r => r.json());
+        if (!data.running) { clearInterval(poll); window.location.reload(); }
+      } catch (_) {}
+    }, 2000);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('fetch-btn');
-  if (btn && btn.textContent.trim() === 'Fetching…') {
+  const btnText = btn?.textContent.trim();
+  if (btn && (btnText === 'Fetching…' || btnText === 'SYNC… ▒▒▒▒')) {
     btn.disabled = true;
     const poll = setInterval(async () => {
       try {
@@ -260,22 +289,24 @@ function startRecvCounter() {
 
 // ── System log ────────────────────────────────────────────────────────────────
 const _syslogMessages = [
-  'LINK HEARTBEAT OK',
-  'PKT RECV · ACK SENT',
-  'AUTH TOKEN REFRESHED',
-  'BUFFER FLUSH COMPLETE',
-  'CHECKSUM VERIFIED',
-  'INDEX REBUILT',
-  'CONN TIMEOUT · RETRY 1/3',
-  'CONN RESTORED · STABLE',
-  'CACHE HIT RATIO: 94%',
-  'SYNC PULSE NOMINAL',
-  'COMPRESSION RATIO 3.2:1',
-  'THREAD POOL NOMINAL',
-  'HEAP ALLOCATION OK',
-  'RECV 0xA21E · DECRYPTED',
-  'UPLINK SIGNAL +82%',
-  'SECTOR SCAN COMPLETE',
+  'NODE_07 HEARTBEAT / OK',
+  'PKT_RECV 0xAF31 / ACK',
+  'AUTH_TOKEN / REFRESH:OK',
+  'BUF_FLUSH / COMPLETE',
+  'CRC_CHECK / VERIFIED',
+  'INDEX_REBUILD / DONE',
+  'CONN_TIMEOUT / RETRY:1/3',
+  'CONN_RESTORE / STABLE',
+  'CACHE_HIT / RATIO:94%',
+  'SYNC_PULSE / NOMINAL',
+  'COMPRESS / RATIO:3.2:1',
+  'THREAD_POOL / NOMINAL',
+  'HEAP_ALLOC / OK',
+  'RECV 0xA21E / DECRYPT:OK',
+  'UPLINK / SIG:+82%',
+  'SECTOR_SCAN / COMPLETE',
+  'PKT_LOSS / RATE:0.00%',
+  'NODE_AUTH / STATUS:OK',
 ];
 
 function startSyslog() {
@@ -311,7 +342,7 @@ function _fuiSelectRow(row) {
   if (!a) return;
 
   const idEl = document.getElementById('fui-detail-id');
-  if (idEl) idEl.textContent = `[ REC:0x${a.id.toString(16).toUpperCase().padStart(6,'0')} ]`;
+  if (idEl) idEl.textContent = `UID:${a.id.toString(16).toUpperCase().padStart(6,'0')} / SEC_04`;
 
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;
@@ -319,11 +350,11 @@ function _fuiSelectRow(row) {
   const gen = ++_fuiSelectGen;
 
   // Verifying flash
-  scroll.innerHTML = '<div class="fui-detail-verify">VERIFYING RECORD · CHECKSUM…</div>';
+  scroll.innerHTML = '<div class="fui-detail-verify">VERIFY_SEQ / CRC_CHECK…</div>';
 
   setTimeout(() => {
     if (_fuiSelectGen !== gen) return;
-    scroll.innerHTML = '<div class="fui-detail-verify fui-verify-ok">CRC OK · DECRYPTING RECORD</div>';
+    scroll.innerHTML = '<div class="fui-detail-verify fui-verify-ok">CRC_PASS / DECRYPT_OK</div>';
 
     setTimeout(() => {
       if (_fuiSelectGen !== gen) return;
@@ -331,9 +362,12 @@ function _fuiSelectRow(row) {
       const typeStr  = (a.content_type || 'ARTICLE').toUpperCase();
       const langStr  = (a.language || 'EN').toUpperCase();
       const srcStr   = (a.source   || 'UNKNOWN').toUpperCase().slice(0, 24);
-      const dateStr  = a.date_published ? a.date_published.slice(0, 10) : '????-??-??';
+      const dateStr  = a.date_published ? a.date_published.slice(0, 10).replace(/-/g, '.') : '????.??.??';
       const doiStr   = a.doi ? a.doi.slice(0, 40) : 'NULL';
-      const fetchHex = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
+      const crcHex   = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
+      const fileId   = `0x${(a.id * 0x1A3).toString(16).toUpperCase().slice(-8)}`;
+      const revision = String((a.id % 23) + 1).padStart(2, '0');
+      const sector   = `SEC_${String(a.id % 8 + 1).padStart(2, '0')}`;
 
       const titleHtml = a.url
         ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
@@ -347,24 +381,27 @@ function _fuiSelectRow(row) {
 
       scroll.innerHTML = `
         <div class="fui-kv-block">
-          <span class="fui-k">ID</span>      <span class="fui-v fui-v-bright">0x${a.id.toString(16).toUpperCase().padStart(8,'0')}</span>
-          <span class="fui-k">TYPE</span>    <span class="fui-v">${typeStr}</span>
-          <span class="fui-k">LANG</span>    <span class="fui-v">${langStr}</span>
-          <span class="fui-k">DATE</span>    <span class="fui-v">${dateStr}</span>
-          <span class="fui-k">SOURCE</span>  <span class="fui-v">${srcStr}</span>
-          <span class="fui-k">STATUS</span>  <span class="fui-v fui-v-bright">UNREAD</span>
-          <span class="fui-k">DOI</span>     <span class="fui-v">${doiStr}</span>
-          <span class="fui-k">CHKSUM</span>  <span class="fui-v">${fetchHex}</span>
+          <span class="fui-k">FILE_ID</span>   <span class="fui-v fui-v-bright">${fileId}</span>
+          <span class="fui-k">UID</span>        <span class="fui-v fui-v-bright">0x${a.id.toString(16).toUpperCase().padStart(8,'0')}</span>
+          <span class="fui-k">CLASS</span>      <span class="fui-v">${typeStr}</span>
+          <span class="fui-k">L</span>          <span class="fui-v">${langStr}</span>
+          <span class="fui-k">TS</span>         <span class="fui-v">${dateStr}</span>
+          <span class="fui-k">SRC_REF</span>   <span class="fui-v">${srcStr}</span>
+          <span class="fui-k">STATUS</span>     <span class="fui-v fui-v-bright">UNREAD</span>
+          <span class="fui-k">REVISION</span>  <span class="fui-v">${revision}</span>
+          <span class="fui-k">SECTOR</span>    <span class="fui-v">${sector}</span>
+          <span class="fui-k">DOI</span>        <span class="fui-v">${doiStr}</span>
+          <span class="fui-k">CRC</span>        <span class="fui-v">${crcHex}</span>
         </div>
         <div class="fui-detail-title">${titleHtml}</div>
         ${authorsHtml ? `<div class="fui-detail-authors">${authorsHtml}</div>` : ''}
         ${abstractHtml
           ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
-          : '<div class="fui-no-abstract">NO ABSTRACT IN RECORD</div>'}
+          : '<div class="fui-no-abstract">NO_ABSTRACT / RECORD_INCOMPLETE</div>'}
         <div class="fui-detail-actions" id="fui-actions-${a.id}">
-          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">★ FLAG</button>
-          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">INTERESTING</button>
-          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">✓ READ</button>
+          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">★ FLAG_01</button>
+          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">QUEUE_INT</button>
+          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">✓ ARCHIVE_OK</button>
           <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">✕ PURGE</button>
         </div>
       `;
@@ -378,7 +415,7 @@ function _fuiSelectRow(row) {
       if (logEl) {
         const div = document.createElement('div');
         div.className = 'fui-syslog-line fui-sl-bright';
-        div.textContent = `RECORD 0x${a.id.toString(16).toUpperCase().padStart(4,'0')} LOADED`;
+        div.textContent = `REC_LOAD / UID:${a.id.toString(16).toUpperCase().padStart(4,'0')} / OK`;
         logEl.appendChild(div);
         logEl.querySelectorAll('.fui-syslog-line').forEach((l, i, arr) => {
           if (i < arr.length - 1) { l.classList.remove('fui-sl-bright'); l.classList.add('fui-sl-dim'); }
@@ -412,7 +449,7 @@ function _fuiTriage(row, action) {
       if (next) _fuiSelectRow(next);
       else {
         const scroll = document.getElementById('fui-detail-scroll');
-        if (scroll) scroll.innerHTML = '<div class="fui-detail-empty">BUFFER EMPTY</div>';
+        if (scroll) scroll.innerHTML = '<div class="fui-detail-empty">BUFFER_EMPTY / 0x0000</div>';
         const idEl = document.getElementById('fui-detail-id');
         if (idEl) idEl.textContent = '[ -- ]';
         _fuiActive = null;

@@ -13,16 +13,16 @@
   {# ── Left: compact index panel ─────────────────────────────────────────── #}
   <div class="fui-index-panel">
     <div class="fui-panel-hdr">
-      <span>// INPUT STREAM</span>
+      <span>// INPUT_STREAM / NODE_07</span>
       <span class="fui-recv-badge" id="fui-recv-count">RCV:0x0000</span>
-      <span class="fui-panel-hdr-id">[ {{ items|length }} RECORDS ]</span>
+      <span class="fui-panel-hdr-id">BUF:{{ '%04d' % items|length }} / OK</span>
     </div>
 
     <div class="fui-index-list" id="fui-index-list">
 
       {% if not items %}
       <div class="fui-detail-empty" style="padding:40px 14px;text-align:left">
-        {% if fetch_running %}FETCHING — STANDBY{% else %}NO RECORDS IN BUFFER{% endif %}
+        {% if fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
       </div>
       {% endif %}
 
@@ -43,7 +43,7 @@
         </div>
         <div class="fui-row-body">
           <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
-          <div class="fui-row-sub">{{ (a.source or 'SRC')[:18]|upper }} ·· {{ (a.language or 'en')|upper }} ·· {{ a.date_published[:7] if a.date_published else '??-????' }}</div>
+          <div class="fui-row-sub">SRC_{{ (a.source or 'UNKN')[:6]|upper }}  /  L:{{ (a.language or 'en')|upper }}  /  TS:{{ a.date_published[:7] if a.date_published else '????.??' }}  /  UID:{{ '%04X' % a.id }}</div>
         </div>
       </div>
       {% endfor %}
@@ -66,7 +66,7 @@
         </div>
         <div class="fui-row-body">
           <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
-          <div class="fui-row-sub">{{ (a.source or 'SRC')[:18]|upper }} ·· {{ (a.language or 'en')|upper }} ·· {{ a.date_published[:7] if a.date_published else '??-????' }}</div>
+          <div class="fui-row-sub">SRC_{{ (a.source or 'UNKN')[:6]|upper }}  /  L:{{ (a.language or 'en')|upper }}  /  TS:{{ a.date_published[:7] if a.date_published else '????.??' }}  /  UID:{{ '%04X' % a.id }}</div>
         </div>
       </div>
       {% endfor %}
@@ -78,19 +78,19 @@
   {# ── Right: detail panel ───────────────────────────────────────────────── #}
   <div class="fui-detail-panel">
     <div class="fui-panel-hdr">
-      <span>// RECORD DETAIL</span>
-      <span class="fui-panel-hdr-id" id="fui-detail-id">[ SELECT RECORD ]</span>
+      <span>// RECORD_DETAIL / SEC_04</span>
+      <span class="fui-panel-hdr-id" id="fui-detail-id">[ AWAIT_SEL ]</span>
     </div>
 
     <div class="fui-detail-scroll" id="fui-detail-scroll">
       <div class="fui-detail-empty" id="fui-detail-content">
-        {% if items %}SELECT A RECORD FROM THE INDEX{% elif fetch_running %}FETCHING — STANDBY{% else %}NO RECORDS IN BUFFER{% endif %}
+        {% if items %}AWAIT_SEL // SELECT FROM INDEX{% elif fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
       </div>
     </div>
 
     {# Instruments strip #}
     <div class="fui-instruments">
-      <div class="fui-instruments-hdr">// SIGNAL ANALYSIS · SYS:NOMINAL</div>
+      <div class="fui-instruments-hdr">// SIG_ANALYSIS / ST:NOMINAL / ERR:00</div>
       <div class="fui-instruments-body">
 
         <div class="fui-signal-array">
@@ -130,11 +130,11 @@
     </div>{# /fui-instruments #}
 
     <div class="fui-syslog">
-      <div class="fui-syslog-hdr">// SYSTEM LOG</div>
+      <div class="fui-syslog-hdr">// SYSLOG / PROC_01</div>
       <div class="fui-syslog-lines" id="fui-syslog-lines">
-        <div class="fui-syslog-line fui-sl-dim">INIT COMPLETE · SKY.SYS v2.4</div>
-        <div class="fui-syslog-line fui-sl-dim">AUTH MODULE LOADED</div>
-        <div class="fui-syslog-line">AWAITING OPERATOR INPUT</div>
+        <div class="fui-syslog-line fui-sl-dim">BOOT_SEQ_04 / COMPLETE</div>
+        <div class="fui-syslog-line fui-sl-dim">AUTH_MOD / STATUS:OK</div>
+        <div class="fui-syslog-line">AWAIT_INPUT // OP_01</div>
       </div>
     </div>
 
@@ -257,7 +257,7 @@
 <div class="fui-syslog classic-syslog">
   <div class="fui-syslog-hdr">// activity</div>
   <div class="fui-syslog-lines" id="fui-syslog-lines">
-    <div class="fui-syslog-line fui-sl-dim">session started</div>
+    <div class="fui-syslog-line fui-sl-dim">session open</div>
     <div class="fui-syslog-line">stream ready</div>
   </div>
 </div>
