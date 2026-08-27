@@ -376,8 +376,8 @@
 /* ── Index panel (left) ──────────────────────────────────────────────────── */
 
 [data-theme="fui"] .fui-index-panel {
-  width:        40%;
-  min-width:    320px;
+  width:        38%;
+  min-width:    280px;
   max-width:    500px;
   border-right: 1px solid var(--p4);
   display:      flex;
@@ -451,6 +451,101 @@
   color:         var(--p2);
   letter-spacing: 0.12em;
 }
+
+/* Detail panel header — two-row variant */
+[data-theme="fui"] .fui-detail-hdr {
+  flex-direction: column;
+  align-items:    stretch;
+  padding:        0;
+}
+[data-theme="fui"] .fui-detail-hdr-top {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         11px 16px 9px;
+}
+[data-theme="fui"] .fui-detail-hdr-strip {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.18em;
+  color:          var(--p4);
+  padding:        3px 16px 6px;
+  border-top:     1px solid var(--p5);
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+}
+
+/* Body row: scroll + aux column side-by-side */
+[data-theme="fui"] .fui-detail-body-row {
+  display:    flex;
+  flex:       1;
+  min-height: 0;
+  overflow:   hidden;
+}
+
+/* Aux column (right strip inside detail panel) */
+[data-theme="fui"] .fui-aux-column {
+  width:          90px;
+  flex-shrink:    0;
+  border-left:    1px solid var(--p5);
+  padding:        12px 10px;
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  overflow:       hidden;
+  background:     rgba(180,184,255,0.01);
+}
+[data-theme="fui"] .fui-aux-block {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+[data-theme="fui"] .fui-aux-label {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.2em;
+  color:          var(--p4);
+  text-transform: uppercase;
+}
+[data-theme="fui"] .fui-aux-value {
+  font-family:    var(--pdisplay);
+  font-size:      18px;
+  color:          var(--p2);
+  letter-spacing: 0.06em;
+  line-height:    1;
+}
+[data-theme="fui"] .fui-aux-phase {
+  margin-top:     auto;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+[data-theme="fui"] .fui-aux-phase-val {
+  font-family:    var(--pdisplay);
+  font-size:      18px;
+  color:          var(--p3);
+  letter-spacing: 0.04em;
+  line-height:    1;
+}
+[data-theme="fui"] .fui-aux-vbars {
+  display:        flex;
+  flex-direction: column;
+  gap:            3px;
+  margin-top:     6px;
+}
+[data-theme="fui"] .fui-aux-bar {
+  display:     block;
+  height:      2px;
+  background:  var(--p4);
+  border-radius: 0;
+}
+[data-theme="fui"] .fui-aux-bar:nth-child(1) { width: 100%; }
+[data-theme="fui"] .fui-aux-bar:nth-child(2) { width:  70%; }
+[data-theme="fui"] .fui-aux-bar:nth-child(3) { width:  45%; }
+[data-theme="fui"] .fui-aux-bar:nth-child(4) { width:  80%; }
+[data-theme="fui"] .fui-aux-bar:nth-child(5) { width:  30%; }
+[data-theme="fui"] .fui-aux-bar:nth-child(6) { width:  60%; }
 
 
 /* ── Index list ──────────────────────────────────────────────────────────── */

@@ -343,6 +343,8 @@ function _fuiSelectRow(row) {
 
   const idEl = document.getElementById('fui-detail-id');
   if (idEl) idEl.textContent = `UID:${a.id.toString(16).toUpperCase().padStart(6,'0')} / SEC_04`;
+  const stateEl = document.getElementById('fui-aux-state');
+  if (stateEl) stateEl.textContent = 'ACT';
 
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;

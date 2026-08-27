@@ -77,16 +77,54 @@
 
   {# ── Right: detail panel ───────────────────────────────────────────────── #}
   <div class="fui-detail-panel">
-    <div class="fui-panel-hdr">
-      <span>// RECORD_DETAIL / SEC_04</span>
-      <span class="fui-panel-hdr-id" id="fui-detail-id">[ AWAIT_SEL ]</span>
-    </div>
-
-    <div class="fui-detail-scroll" id="fui-detail-scroll">
-      <div class="fui-detail-empty" id="fui-detail-content">
-        {% if items %}AWAIT_SEL // SELECT FROM INDEX{% elif fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+    <div class="fui-panel-hdr fui-detail-hdr">
+      <div class="fui-detail-hdr-top">
+        <span>// RECORD_DETAIL / SEC_04</span>
+        <span class="fui-panel-hdr-id" id="fui-detail-id">[ AWAIT_SEL ]</span>
+      </div>
+      <div class="fui-detail-hdr-strip">
+        UID_00000000 ·· CRC:0x4F2A ·· RECV:OK ·· T:00.004ms ·· NODE_07 ·· AUTH:PASS
       </div>
     </div>
+
+    <div class="fui-detail-body-row">
+      <div class="fui-detail-scroll" id="fui-detail-scroll">
+        <div class="fui-detail-empty" id="fui-detail-content">
+          {% if items %}AWAIT_SEL // SELECT FROM INDEX{% elif fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+        </div>
+      </div>
+
+      <div class="fui-aux-column">
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">CLASS</div>
+          <div class="fui-aux-value">B</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">REV</div>
+          <div class="fui-aux-value">17</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">SECTOR</div>
+          <div class="fui-aux-value">04</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">STATE</div>
+          <div class="fui-aux-value" id="fui-aux-state">RDY</div>
+        </div>
+        <div class="fui-aux-phase">
+          <div class="fui-aux-label">PHASE</div>
+          <div class="fui-aux-phase-val">Ω 0.381</div>
+        </div>
+        <div class="fui-aux-vbars" aria-hidden="true">
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+        </div>
+      </div>
+    </div>{# /fui-detail-body-row #}
 
     {# Instruments strip #}
     <div class="fui-instruments">
