@@ -104,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFuiPanel();
     startGlitchEffects();
     startSysMetrics();
+    startPhaseVector();
+    startAuxPkt();
+    startPeriodicChecksum();
   } else if (!isFui) {
     applyKeywordFilters();
     setupKeyboardTriage();
@@ -714,7 +717,9 @@ function startSysMetrics() {
 
   async function poll() {
     try {
-      const d = await fetch('/api/sysmetrics').then(r => r.json());
+      const t0 = performance.now();
+      const d  = await fetch('/api/sysmetrics').then(r => r.json());
+      const latMs = performance.now() - t0;
 
       cpuHistory.push(d.cpu);
       if (cpuHistory.length > 80) cpuHistory.shift();
@@ -724,14 +729,37 @@ function startSysMetrics() {
 
       updateBars(d.cpu_cores);
 
-      const cpuEl = document.getElementById('fui-cpu-pct');
-      const memEl = document.getElementById('fui-mem-pct');
-      const upEl  = document.getElementById('fui-net-up');
-      const dnEl  = document.getElementById('fui-net-dn');
+      const cpuEl  = document.getElementById('fui-cpu-pct');
+      const memEl  = document.getElementById('fui-mem-pct');
+      const upEl   = document.getElementById('fui-net-up');
+      const dnEl   = document.getElementById('fui-net-dn');
+      const latEl  = document.getElementById('fui-lat');
+      const freqEl = document.getElementById('fui-freq');
+      const ampEl  = document.getElementById('fui-amp');
+      const dcEl   = document.getElementById('fui-dc');
+
       if (cpuEl) cpuEl.textContent = d.cpu.toFixed(1);
       if (memEl) memEl.textContent = d.mem.toFixed(1);
       if (upEl)  upEl.textContent  = fmtBps(d.net_sent_bps);
       if (dnEl)  dnEl.textContent  = fmtBps(d.net_recv_bps);
+      if (latEl) latEl.textContent = latMs.toFixed(1);
+
+      // Derived waveform metrics from history
+      const n    = cpuHistory.length;
+      const mean = cpuHistory.reduce((a, b) => a + b, 0) / n;
+      const max  = Math.max(...cpuHistory);
+      const min  = Math.min(...cpuHistory);
+      const amp  = (max - min) / 2 / 100;
+      const dc   = mean / 100;
+      let crossings = 0;
+      for (let i = 1; i < n; i++) {
+        if ((cpuHistory[i - 1] - mean) * (cpuHistory[i] - mean) < 0) crossings++;
+      }
+      const freq = crossings / 2 / (n * 0.9);
+
+      if (freqEl) freqEl.textContent = freq.toFixed(2);
+      if (ampEl)  ampEl.textContent  = amp.toFixed(2);
+      if (dcEl)   dcEl.textContent   = `+${dc.toFixed(2)}`;
     } catch (_) {}
     setTimeout(poll, 900);
   }
@@ -739,6 +767,52 @@ function startSysMetrics() {
   // Initial draw with zeros, then start polling
   renderCanvas();
   setTimeout(poll, 300);
+}
+
+// ── Phase vector drift ────────────────────────────────────────────────────────
+function startPhaseVector() {
+  const el = document.getElementById('fui-phasevec-val');
+  if (!el) return;
+  let phase = 0.381;
+  function drift() {
+    phase += (Math.random() - 0.5) * 0.002;
+    phase = Math.max(0.2, Math.min(0.6, phase));
+    el.textContent = `Ω ${phase.toFixed(3)}φ`;
+    setTimeout(drift, 2800 + Math.random() * 400);
+  }
+  drift();
+}
+
+// ── Aux column PKT counter ────────────────────────────────────────────────────
+function startAuxPkt() {
+  const el = document.getElementById('fui-aux-pkt');
+  if (!el) return;
+  let count = (Math.random() * 512 | 0) + 100;
+  function tick() {
+    count += (Math.random() * 7 | 0) + 1;
+    el.textContent = String(count).padStart(4, '0');
+    setTimeout(tick, 4000 + Math.random() * 6000);
+  }
+  tick();
+}
+
+// ── Periodic checksum log lines ───────────────────────────────────────────────
+function startPeriodicChecksum() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function emit() {
+    const crc   = (Math.random() * 0xFFFF | 0).toString(16).toUpperCase().padStart(4, '0');
+    const delta = (Math.random() * 0.999).toFixed(3);
+    [...container.children].forEach(el => el.classList.add('fui-sl-dim'));
+    const line = document.createElement('div');
+    line.className = 'fui-syslog-line fui-sl-dim';
+    line.textContent = `CHKSUM 0x${crc} / DELTA ${delta} / ST:OK`;
+    container.appendChild(line);
+    const nonHint = [...container.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+    while (nonHint.length > 4) { nonHint.shift().remove(); }
+    setTimeout(emit, 90000 + Math.random() * 30000);
+  }
+  setTimeout(emit, 90000 + Math.random() * 30000);
 }
 
 // ── Keyboard triage shortcuts ─────────────────────────────────────────────────

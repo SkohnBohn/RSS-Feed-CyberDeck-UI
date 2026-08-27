@@ -111,6 +111,10 @@
           <div class="fui-aux-label">STATE</div>
           <div class="fui-aux-value" id="fui-aux-state">RDY</div>
         </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">PKT</div>
+          <div class="fui-aux-value" id="fui-aux-pkt">0000</div>
+        </div>
         <div class="fui-aux-phase">
           <div class="fui-aux-label">PHASE</div>
           <div class="fui-aux-phase-val">Ω 0.381</div>
@@ -143,11 +147,18 @@
             <span class="fui-sbar fui-sbar-7"></span>
             <span class="fui-sbar fui-sbar-8"></span>
           </div>
+          <div class="fui-signal-sublabel">BAND_04 / CH:A</div>
         </div>
 
         <div class="fui-waveform-wrap">
           <div class="fui-waveform-label">CPU · <span id="fui-cpu-pct">--.-</span>%</div>
           <canvas class="fui-waveform-canvas" id="fui-waveform-canvas" height="36"></canvas>
+          <div class="fui-waveform-sublabel">FREQ:<span id="fui-freq">--.-</span>Hz · AMP:<span id="fui-amp">0.--</span>V · DC:<span id="fui-dc">+0.--</span></div>
+        </div>
+
+        <div class="fui-phasevec-block">
+          <div class="fui-phasevec-label">PHASE VECTOR</div>
+          <div class="fui-phasevec-val" id="fui-phasevec-val">Ω 0.381φ</div>
         </div>
 
         <div class="fui-stats-col">
@@ -161,6 +172,7 @@
           <span>MEM: <span id="fui-mem-pct">--.-</span>%</span>
           <span>NET↑ <span id="fui-net-up">----</span></span>
           <span>NET↓ <span id="fui-net-dn">----</span></span>
+          <span>LAT: <span id="fui-lat">--.-</span>ms</span>
           <span>CRC: 0x{{ '%04X' % (items|length * 137 + 0x4A2F) }}</span>
         </div>
 

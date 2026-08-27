@@ -1657,6 +1657,47 @@
   transition: height 0.5s ease, opacity 0.5s ease;
   box-shadow: 0 0 4px rgba(180,184,255,0.3);
 }
+[data-theme="fui"] .fui-signal-sublabel {
+  font-family:    var(--pfont);
+  font-size:      6px;
+  letter-spacing: 0.16em;
+  color:          var(--p5);
+  margin-top:     3px;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+
+[data-theme="fui"] .fui-waveform-sublabel {
+  font-family:    var(--pfont);
+  font-size:      6px;
+  letter-spacing: 0.12em;
+  color:          var(--p5);
+  margin-top:     2px;
+  white-space:    nowrap;
+}
+
+[data-theme="fui"] .fui-phasevec-block {
+  flex-shrink:    0;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  min-width:      80px;
+}
+[data-theme="fui"] .fui-phasevec-label {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.2em;
+  color:          var(--p4);
+  text-transform: uppercase;
+}
+[data-theme="fui"] .fui-phasevec-val {
+  font-family:    var(--pdisplay);
+  font-size:      20px;
+  color:          var(--p1);
+  letter-spacing: 0.06em;
+  line-height:    1;
+  text-shadow:    0 0 6px rgba(180,184,255,0.4);
+}
 
 /* ── Sys log strip (detail panel bottom) ─────────────────────────────────── */
 
