@@ -94,7 +94,7 @@
       <div class="fui-instruments-body">
 
         <div class="fui-signal-array">
-          <div class="fui-signal-label">SPECTRUM</div>
+          <div class="fui-signal-label">CPU CORES</div>
           <div class="fui-signal-bars">
             <span class="fui-sbar fui-sbar-1"></span>
             <span class="fui-sbar fui-sbar-2"></span>
@@ -108,19 +108,8 @@
         </div>
 
         <div class="fui-waveform-wrap">
-          <div class="fui-waveform-label">INPUT FLUX</div>
-          <svg class="fui-waveform" viewBox="0 0 300 36" preserveAspectRatio="none">
-            <g class="fui-wave-track">
-              <polyline class="fui-wave" points="
-                0,18 12,10 20,26 32,6  44,30 54,14 64,22 74,8  84,28 96,20
-                106,12 116,32 128,16 138,24 150,4  162,28 170,18 182,10 194,26 206,16
-                216,30 226,12 238,22 250,8  260,28 272,18 284,10 296,24 300,18
-                300,18 312,10 320,26 332,6  344,30 354,14 364,22 374,8  384,28 396,20
-                406,12 416,32 428,16 438,24 450,4  462,28 470,18 482,10 494,26 506,16
-                516,30 526,12 538,22 550,8  560,28 572,18 584,10 596,24 600,18
-              "/>
-            </g>
-          </svg>
+          <div class="fui-waveform-label">CPU · <span id="fui-cpu-pct">--.-</span>%</div>
+          <canvas class="fui-waveform-canvas" id="fui-waveform-canvas" height="36"></canvas>
         </div>
 
         <div class="fui-stats-col">
@@ -131,9 +120,9 @@
         </div>
 
         <div class="fui-coords-col">
-          <span>SIG: ████████░░ 82%</span>
-          <span>LAT: 52.519°N</span>
-          <span>LON: 013.405°E</span>
+          <span>MEM: <span id="fui-mem-pct">--.-</span>%</span>
+          <span>NET↑ <span id="fui-net-up">----</span></span>
+          <span>NET↓ <span id="fui-net-dn">----</span></span>
           <span>CRC: 0x{{ '%04X' % (items|length * 137 + 0x4A2F) }}</span>
         </div>
 

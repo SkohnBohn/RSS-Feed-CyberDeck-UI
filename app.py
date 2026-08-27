@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -7,6 +8,15 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 import db
 import scraper
+
+try:
+    import psutil as _psutil
+    _net_prev = _psutil.net_io_counters()
+    _net_prev_t = time.monotonic()
+except ImportError:
+    _psutil = None
+    _net_prev = None
+    _net_prev_t = None
 
 app = Flask(__name__)
 db.init_db()
@@ -82,6 +92,33 @@ def touch_session():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     db.set_setting("last_opened_at", now)
     return "", 204
+
+
+@app.route("/api/sysmetrics")
+def sysmetrics():
+    global _net_prev, _net_prev_t
+    if _psutil is None:
+        return jsonify({"cpu": 0, "cpu_cores": [], "mem": 0, "net_sent_bps": 0, "net_recv_bps": 0})
+
+    cpu_total = _psutil.cpu_percent(interval=None)
+    cpu_cores = _psutil.cpu_percent(interval=None, percpu=True)
+    mem       = _psutil.virtual_memory().percent
+    net_now   = _psutil.net_io_counters()
+    now_t     = time.monotonic()
+
+    dt = now_t - _net_prev_t if _net_prev_t else 1.0
+    net_sent_bps = max(0, (net_now.bytes_sent - _net_prev.bytes_sent) / dt) if _net_prev else 0
+    net_recv_bps = max(0, (net_now.bytes_recv - _net_prev.bytes_recv) / dt) if _net_prev else 0
+    _net_prev  = net_now
+    _net_prev_t = now_t
+
+    return jsonify({
+        "cpu":          cpu_total,
+        "cpu_cores":    cpu_cores,
+        "mem":          mem,
+        "net_sent_bps": net_sent_bps,
+        "net_recv_bps": net_recv_bps,
+    })
 
 
 # ── Triage views ──────────────────────────────────────────────────────────────

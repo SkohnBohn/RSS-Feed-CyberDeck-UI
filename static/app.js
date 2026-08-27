@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isFui && isRiver) {
     setupFuiPanel();
     startGlitchEffects();
+    startSysMetrics();
   } else {
     applyKeywordFilters();
     setupKeyboardTriage();
@@ -415,6 +416,125 @@ function applyKeywordFilters() {
     });
     list.insertBefore(notice, list.firstChild);
   }
+}
+
+// ── Live system metrics (CPU waveform + core bars + net stats) ───────────────
+function startSysMetrics() {
+  const canvas = document.getElementById('fui-waveform-canvas');
+  if (!canvas) return;
+
+  const cpuHistory = new Array(80).fill(0);
+  let animFrame = null;
+
+  function fmtBps(bps) {
+    if (bps < 1024)       return `${Math.round(bps)}B/s`;
+    if (bps < 1048576)    return `${(bps / 1024).toFixed(1)}K/s`;
+    return `${(bps / 1048576).toFixed(1)}M/s`;
+  }
+
+  function drawWaveform(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+
+    const pts = cpuHistory.length;
+    const stepX = w / (pts - 1);
+
+    // Grid lines at 25%, 50%, 75%
+    ctx.strokeStyle = 'rgba(180,184,255,0.08)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75].forEach(f => {
+      const y = h - f * h;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    });
+
+    // Filled area under curve
+    ctx.beginPath();
+    cpuHistory.forEach((v, i) => {
+      const x = i * stepX;
+      const y = h - (v / 100) * h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo((pts - 1) * stepX, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(180,184,255,0.07)';
+    ctx.fill();
+
+    // Main line
+    ctx.beginPath();
+    cpuHistory.forEach((v, i) => {
+      const x = i * stepX;
+      const y = h - (v / 100) * h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = 'rgba(200,204,255,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(180,184,255,0.6)';
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Leading dot
+    const lx = (pts - 1) * stepX;
+    const ly = h - (cpuHistory[pts - 1] / 100) * h;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(220,224,255,1)';
+    ctx.shadowColor = 'rgba(180,184,255,0.9)';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function renderCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const w   = canvas.clientWidth;
+    const h   = canvas.clientHeight || 36;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width  = w * dpr;
+      canvas.height = h * dpr;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawWaveform(ctx, w, h);
+  }
+
+  function updateBars(cores) {
+    const bars = document.querySelectorAll('.fui-sbar');
+    bars.forEach((bar, i) => {
+      const pct = cores.length > 0 ? cores[i % cores.length] : 0;
+      const px  = Math.max(2, Math.round((pct / 100) * 28));
+      bar.style.height  = px + 'px';
+      bar.style.opacity = 0.35 + (pct / 100) * 0.65;
+    });
+  }
+
+  async function poll() {
+    try {
+      const d = await fetch('/api/sysmetrics').then(r => r.json());
+
+      cpuHistory.push(d.cpu);
+      if (cpuHistory.length > 80) cpuHistory.shift();
+
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animFrame = requestAnimationFrame(renderCanvas);
+
+      updateBars(d.cpu_cores);
+
+      const cpuEl = document.getElementById('fui-cpu-pct');
+      const memEl = document.getElementById('fui-mem-pct');
+      const upEl  = document.getElementById('fui-net-up');
+      const dnEl  = document.getElementById('fui-net-dn');
+      if (cpuEl) cpuEl.textContent = d.cpu.toFixed(1);
+      if (memEl) memEl.textContent = d.mem.toFixed(1);
+      if (upEl)  upEl.textContent  = fmtBps(d.net_sent_bps);
+      if (dnEl)  dnEl.textContent  = fmtBps(d.net_recv_bps);
+    } catch (_) {}
+    setTimeout(poll, 900);
+  }
+
+  // Initial draw with zeros, then start polling
+  renderCanvas();
+  setTimeout(poll, 300);
 }
 
 // ── Keyboard triage shortcuts ─────────────────────────────────────────────────
