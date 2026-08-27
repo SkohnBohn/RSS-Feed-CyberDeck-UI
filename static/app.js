@@ -326,7 +326,9 @@ function startSyslog() {
         l.classList.add('fui-sl-dim');
       }
     });
-    while (container.children.length > 4) container.removeChild(container.firstChild);
+    // Evict oldest non-kbd-hint lines (keep at most 4 regular + 1 hint)
+    const nonHint = [...container.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+    while (nonHint.length > 4) { nonHint.shift().remove(); }
     setTimeout(addLine, 2800 + Math.random() * 4500);
   }
   setTimeout(addLine, 1500);
@@ -363,6 +365,8 @@ function _fuiSelectRow(row) {
   if (revEl)    revEl.textContent    = revision;
   const secEl    = document.getElementById('fui-aux-sector');
   if (secEl)    secEl.textContent    = sectorNum;
+  const kbdEl    = document.getElementById('fui-kbd-hint');
+  if (kbdEl)    kbdEl.textContent    = 'F:FLAG  I:QUEUE  R:ARCH  DEL:PURGE';
 
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;
@@ -416,10 +420,10 @@ function _fuiSelectRow(row) {
           ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
           : '<div class="fui-no-abstract">NO_ABSTRACT / RECORD_INCOMPLETE</div>'}
         <div class="fui-detail-actions" id="fui-actions-${a.id}">
-          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">★ FLAG_01</button>
-          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">QUEUE_INT</button>
-          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">✓ ARCHIVE_OK</button>
-          <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">✕ PURGE</button>
+          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">[F] FLAG</button>
+          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">[I] QUEUE</button>
+          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">[R] ARCHIVE</button>
+          <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">[DEL] PURGE</button>
         </div>
       `;
 
@@ -434,10 +438,12 @@ function _fuiSelectRow(row) {
         div.className = 'fui-syslog-line fui-sl-bright';
         div.textContent = `REC_LOAD / UID:${a.id.toString(16).toUpperCase().padStart(4,'0')} / OK`;
         logEl.appendChild(div);
-        logEl.querySelectorAll('.fui-syslog-line').forEach((l, i, arr) => {
-          if (i < arr.length - 1) { l.classList.remove('fui-sl-bright'); l.classList.add('fui-sl-dim'); }
+        logEl.querySelectorAll('.fui-syslog-line').forEach(l => {
+          l.classList.remove('fui-sl-bright'); l.classList.add('fui-sl-dim');
         });
-        while (logEl.children.length > 4) logEl.removeChild(logEl.firstChild);
+        div.classList.remove('fui-sl-dim'); div.classList.add('fui-sl-bright');
+        const nonHintLog = [...logEl.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+        while (nonHintLog.length > 4) { nonHintLog.shift().remove(); }
       }
     }, 160);
   }, 290);
@@ -477,6 +483,8 @@ function _fuiTriage(row, action) {
         if (revEl)   revEl.textContent   = '--';
         const secEl   = document.getElementById('fui-aux-sector');
         if (secEl)   secEl.textContent   = '--';
+        const kbdEl   = document.getElementById('fui-kbd-hint');
+        if (kbdEl)   kbdEl.textContent   = '── SEL TO ACT';
         _fuiActive = null;
       }
     }, 160);
