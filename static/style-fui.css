@@ -59,6 +59,10 @@
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+@keyframes scanRing {
+  0%   { transform: scale(1);   opacity: 0.65; }
+  100% { transform: scale(3.2); opacity: 0;    }
+}
 
 /* ── Token palette ───────────────────────────────────────────────────────── */
 [data-theme="fui"] {
@@ -200,6 +204,20 @@
   box-shadow:    0 0 6px var(--p1), 0 0 12px rgba(180,184,255,0.4);
   animation:     pulse 2s infinite;
   flex-shrink:   0;
+  position:      relative;
+  overflow:      visible;
+}
+[data-theme="fui"] .app-status-dot::after {
+  content:       '';
+  position:      absolute;
+  top: 50%; left: 50%;
+  width:         16px;
+  height:        16px;
+  margin:        -8px 0 0 -8px;
+  border:        1px solid var(--p3);
+  border-radius: 50%;
+  animation:     scanRing 2.4s ease-out infinite;
+  pointer-events: none;
 }
 
 /* ── Nav ─────────────────────────────────────────────────────────────────── */
@@ -267,6 +285,7 @@
   background:   transparent;
   color:        var(--p3);
   margin-left:  auto;
+  clip-path:    polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%);
 }
 [data-theme="fui"] .nav-item.active .nav-count {
   border-color: var(--p3);
@@ -295,8 +314,16 @@
 }
 
 [data-theme="fui"] .fetch-btn {
-  background:      transparent;
+  background-color:  transparent;
+  background-image:  repeating-linear-gradient(
+    45deg,
+    rgba(180,184,255,0.05) 0,
+    rgba(180,184,255,0.05) 2px,
+    transparent 2px,
+    transparent 8px
+  );
   border:          1px solid var(--p1);
+  clip-path:       polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
   color:           var(--p1);
   font-family:     var(--pfont);
   font-size:       10px;
@@ -312,7 +339,14 @@
   width:           100%;
 }
 [data-theme="fui"] .fetch-btn:hover:not(:disabled) {
-  background: rgba(180,184,255,0.10);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(180,184,255,0.12) 0,
+    rgba(180,184,255,0.12) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+  background-color: rgba(180,184,255,0.04);
   box-shadow: 0 0 14px rgba(180,184,255,0.2);
   opacity:    1;
 }
@@ -393,21 +427,23 @@
   background:    rgba(180,184,255,0.02);
   flex-shrink:   0;
   position:      relative;
+  clip-path:     polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
 }
 
-/* Crosshair tick marks at panel header joints */
-[data-theme="fui"] .fui-panel-hdr::before,
-[data-theme="fui"] .fui-panel-hdr::after {
+/* Left barcode-tick accent + remove old joint dots */
+[data-theme="fui"] .fui-panel-hdr::before {
   content:  '';
   position: absolute;
-  bottom:   -3px;
-  width:    5px;
-  height:   5px;
-  border:   1px solid var(--p4);
-  background: var(--p7);
+  left: 0; top: 0; bottom: 0;
+  width:    2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--p3) 0px, var(--p3) 3px,
+    transparent 3px, transparent 6px
+  );
+  pointer-events: none;
 }
-[data-theme="fui"] .fui-panel-hdr::before { left: -3px; }
-[data-theme="fui"] .fui-panel-hdr::after  { right: -3px; }
+[data-theme="fui"] .fui-panel-hdr::after { display: none; }
 
 [data-theme="fui"] .fui-panel-hdr-id {
   font-family:   var(--pfont);
@@ -452,6 +488,25 @@
   color:      var(--p1);
   animation:  blink 1.2s step-end infinite;
   margin-left: 1px;
+}
+/* Targeting bracket corners on active row */
+[data-theme="fui"] .fui-index-row.fui-row-active::before {
+  content:     '';
+  position:    absolute;
+  top: 3px; left: 3px;
+  width: 8px; height: 8px;
+  border-top:  1px solid var(--p1);
+  border-left: 1px solid var(--p1);
+  pointer-events: none;
+}
+[data-theme="fui"] .fui-index-row.fui-row-active::after {
+  content:       '';
+  position:      absolute;
+  bottom: 3px; right: 3px;
+  width: 8px; height: 8px;
+  border-bottom: 1px solid var(--p1);
+  border-right:  1px solid var(--p1);
+  pointer-events: none;
 }
 [data-theme="fui"] .fui-index-row.fui-row-glitch {
   animation: rowGlitch 0.12s steps(1) forwards;
@@ -527,10 +582,24 @@
   text-transform: uppercase;
   border-bottom:  1px solid var(--p5);
 }
+[data-theme="fui"] .fui-index-marker span::before,
+[data-theme="fui"] .fui-index-marker span::after {
+  content: ' ◆ ';
+  font-size: 5px;
+  color:     var(--p5);
+  letter-spacing: 0;
+  vertical-align: middle;
+}
 [data-theme="fui"] .fui-index-marker-line {
   flex:       1;
   height:     1px;
-  background: var(--p5);
+  background: repeating-linear-gradient(
+    to right,
+    var(--p4) 0, var(--p4) 8px,
+    transparent 8px, transparent 10px,
+    var(--p5) 10px, var(--p5) 11px,
+    transparent 11px, transparent 16px
+  );
 }
 
 /* ── Detail panel ────────────────────────────────────────────────────────── */
@@ -695,7 +764,17 @@
 /* ── Instruments strip ───────────────────────────────────────────────────── */
 
 [data-theme="fui"] .fui-instruments {
-  border-top:    1px solid var(--p4);
+  border-top:    1px solid transparent;
+  border-image:  repeating-linear-gradient(
+    to right,
+    transparent  0,  transparent  4px,
+    var(--p4)    4px, var(--p4)   22px,
+    transparent 22px, transparent 25px,
+    var(--p4)   25px, var(--p4)   28px,
+    transparent 28px, transparent 36px,
+    var(--p5)   36px, var(--p5)   42px,
+    transparent 42px, transparent 50px
+  ) 1 0 0 0;
   padding:       8px 16px 10px;
   flex-shrink:   0;
   background:    rgba(180,184,255,0.015);
@@ -1179,6 +1258,27 @@
   overflow: hidden;
   display:  block;
 }
+/* Targeting reticle corners over the x-ray image */
+[data-theme="fui"] .fui-dossier-img-wrap::before {
+  content:     '';
+  position:    absolute;
+  top: 5px; left: 5px;
+  width: 12px; height: 12px;
+  border-top:  1px solid var(--p1);
+  border-left: 1px solid var(--p1);
+  z-index:     4;
+  pointer-events: none;
+}
+[data-theme="fui"] .fui-dossier-img-wrap::after {
+  content:       '';
+  position:      absolute;
+  bottom: 5px; right: 5px;
+  width: 12px; height: 12px;
+  border-bottom: 1px solid var(--p1);
+  border-right:  1px solid var(--p1);
+  z-index:       4;
+  pointer-events: none;
+}
 
 [data-theme="fui"] .fui-dossier-img {
   display:             block;
@@ -1313,6 +1413,10 @@
   font-size:      8px;
   color:          var(--p4);
   letter-spacing: 0.12em;
+  border:         1px solid var(--p5);
+  padding:        1px 5px;
+  position:       relative;
+  clip-path:      polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
 }
 
 /* ── Signal spectrum array ───────────────────────────────────────────────── */
@@ -1335,8 +1439,13 @@
   height:      28px;
 }
 [data-theme="fui"] .fui-sbar {
-  flex:       1;
-  background: var(--p1);
+  flex:              1;
+  background-color:  var(--p1);
+  background-image:  repeating-linear-gradient(
+    45deg,
+    rgba(0,0,0,0.28) 0, rgba(0,0,0,0.28) 1px,
+    transparent 1px, transparent 4px
+  );
   opacity:    0.72;
   min-width:  4px;
   height:     14px;
@@ -1347,7 +1456,14 @@
 /* ── Sys log strip (detail panel bottom) ─────────────────────────────────── */
 
 [data-theme="fui"] .fui-syslog {
-  border-top:  1px solid var(--p5);
+  border-top:   1px solid transparent;
+  border-image: repeating-linear-gradient(
+    to right,
+    var(--p5)     0, var(--p5)    12px,
+    transparent  12px, transparent 14px,
+    var(--p5)    14px, var(--p5)   16px,
+    transparent  16px, transparent 24px
+  ) 1 0 0 0;
   padding:     6px 16px 8px;
   flex-shrink: 0;
   background:  rgba(180,184,255,0.005);
@@ -1447,5 +1563,6 @@
   [data-theme="fui"] .fui-row-glitch                 { animation: none; }
   [data-theme="fui"] .fui-dossier-overlay.dossier-spike { animation: none; }
   [data-theme="fui"] .fui-dossier-img                { transition: none; }
+  [data-theme="fui"] .app-status-dot::after          { animation: none; opacity: 0; }
   [data-theme="fui"] *                               { transition-duration: 0.01ms !important; }
 }
