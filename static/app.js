@@ -87,9 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── FUI split-panel ──────────────────────────────────────────────────────────
 
-let _fuiArticles = [];
-let _fuiActive   = null;
+let _fuiArticles  = [];
+let _fuiActive    = null;
 let _fuiSelectGen = 0;
+let _fuiPanelFocus = 'index'; // 'index' | 'detail'
+
+function _setFuiPanelFocus(which) {
+  _fuiPanelFocus = which;
+  document.querySelector('.fui-index-panel')?.classList.toggle('fui-panel-focused', which === 'index');
+  document.querySelector('.fui-detail-panel')?.classList.toggle('fui-panel-focused', which === 'detail');
+}
 
 function setupFuiPanel() {
   const dataEl = document.getElementById('fui-data');
@@ -99,40 +106,51 @@ function setupFuiPanel() {
   const list = document.getElementById('fui-index-list');
   if (!list) return;
 
-  // Select first row on load
+  // Select first row on load; index panel starts focused
   const firstRow = list.querySelector('.fui-index-row');
   if (firstRow) _fuiSelectRow(firstRow);
+  _setFuiPanelFocus('index');
 
   list.addEventListener('click', e => {
     const row = e.target.closest('.fui-index-row');
-    if (row) _fuiSelectRow(row);
+    if (row) { _fuiSelectRow(row); _setFuiPanelFocus('index'); }
   });
 
-  // Keyboard: F/I/R/Delete acts on active article
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || !_fuiActive) return;
-    const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
-    const act = map[e.key];
-    if (!act) return;
-    e.preventDefault();
-    _fuiTriage(_fuiActive, act);
-  });
-
-  // Arrow keys navigate index rows; F/I/R/Del triage active article
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // ← / → switch panel focus
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      _setFuiPanelFocus('index');
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      _setFuiPanelFocus('detail');
+      return;
+    }
+
+    // ↑ / ↓ — context-sensitive
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      const rows = [...document.querySelectorAll('.fui-index-row')];
-      if (!rows.length) return;
-      const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
-      const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
-      if (rows[ni] && rows[ni] !== _fuiActive) {
-        _fuiSelectRow(rows[ni]);
-        rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (_fuiPanelFocus === 'detail') {
+        const scroll = document.getElementById('fui-detail-scroll');
+        if (scroll) scroll.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
+      } else {
+        const rows = [...document.querySelectorAll('.fui-index-row')];
+        if (!rows.length) return;
+        const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
+        const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
+        if (rows[ni] && rows[ni] !== _fuiActive) {
+          _fuiSelectRow(rows[ni]);
+          rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
       }
       return;
     }
+
+    // F / I / R / Del — triage active article from either panel
     if (!_fuiActive) return;
     const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
     const act = map[e.key];
