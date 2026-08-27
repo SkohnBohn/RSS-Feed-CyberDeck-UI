@@ -9,11 +9,14 @@
   100% { background-position: 0 4px; }
 }
 @keyframes flicker {
-  0%, 91%, 100% { opacity: 1;   }
-  92%            { opacity: .88; }
-  94%            { opacity: .97; }
-  96%            { opacity: .72; }
-  98%            { opacity: .95; }
+  0%, 88%, 100% { opacity: 1;    }
+  89%           { opacity: 0.94; }
+  90%           { opacity: 0.88; }
+  91%           { opacity: 0.96; }
+  92%           { opacity: 0.90; }
+  93%           { opacity: 0.97; }
+  94%           { opacity: 0.88; }
+  95%           { opacity: 1;    }
 }
 @keyframes pulse {
   0%,  50%  { opacity: 1;  }
@@ -21,10 +24,10 @@
 }
 
 @keyframes rowGlitch {
-  0%,100% { transform: translateX(0);  filter: none; }
-  20%     { transform: translateX(3px); filter: brightness(1.8); }
-  40%     { transform: translateX(-2px);filter: brightness(0.7); }
-  60%     { transform: translateX(1px); filter: brightness(1.4); }
+  0%,100% { transform: translateX(0);   color: var(--p1); box-shadow: none; }
+  20%     { transform: translateX(4px);  color: var(--p0); box-shadow: 0 0 6px rgba(180,184,255,0.5); }
+  50%     { transform: translateX(-3px); color: var(--p1); }
+  75%     { transform: translateX(2px);  color: var(--p0); }
 }
 @keyframes blink {
   0%, 49% { opacity: 1; }
@@ -1217,7 +1220,7 @@
     rgba(180,184,255,0.3) 80%,
     transparent);
   box-shadow:     0 0 8px rgba(180,184,255,0.35), 0 0 24px rgba(180,184,255,0.1);
-  animation:      scanBeam 4.5s linear infinite;
+  animation:      scanBeam 5.3s ease-in-out infinite;
   pointer-events: none;
   z-index:        2;
 }
@@ -1352,3 +1355,14 @@
 [data-theme="fui"] .fui-detail-verify::before { content: '[ '; }
 [data-theme="fui"] .fui-detail-verify::after  { content: ' ]'; }
 [data-theme="fui"] .fui-detail-verify.fui-verify-ok { color: var(--p2); }
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+/* CPU canvas (startSysMetrics) is data — JS respects this flag and stops
+   glitch effects but keeps the live graph. All CSS flicker/sweep stops. */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="fui"] body            { animation: none; }
+  [data-theme="fui"] .fui-scan-beam  { animation: none; opacity: 0; }
+  [data-theme="fui"] .fui-ticker-inner { animation: none; }
+  [data-theme="fui"] .fui-row-glitch { animation: none; }
+  [data-theme="fui"] *               { transition-duration: 0.01ms !important; }
+}

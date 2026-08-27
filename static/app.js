@@ -347,16 +347,18 @@ function _esc(s) {
 }
 
 function startGlitchEffects() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   function doGlitch() {
     const rows = document.querySelectorAll('.fui-index-row');
     if (rows.length) {
       const r = rows[Math.floor(Math.random() * rows.length)];
       r.classList.add('fui-row-glitch');
-      setTimeout(() => r.classList.remove('fui-row-glitch'), 150);
+      setTimeout(() => r.classList.remove('fui-row-glitch'), 130);
     }
-    setTimeout(doGlitch, 3500 + Math.random() * 9000);
+    // Prime numbers prevent lockstep with flicker (7s) and scanBeam (5.3s)
+    setTimeout(doGlitch, 4700 + Math.random() * 8300);
   }
-  setTimeout(doGlitch, 1500 + Math.random() * 2000);
+  setTimeout(doGlitch, 2300 + Math.random() * 1800);
 }
 
 // ── Keyword filters ──────────────────────────────────────────────────────────
