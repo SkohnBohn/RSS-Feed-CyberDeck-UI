@@ -99,7 +99,7 @@
   color: var(--p7);
 }
 
-[data-theme="fui"] * { box-sizing: border-box; }
+[data-theme="fui"] * { box-sizing: border-box; -webkit-user-select: text; user-select: text; }
 
 [data-theme="fui"] a        { color: var(--p1); }
 [data-theme="fui"] a:hover  { color: var(--p0); }
