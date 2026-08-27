@@ -522,10 +522,10 @@
 }
 
 [data-theme="fui"] .fui-row-id {
-  font-family:   var(--pfont);
-  font-size:     9px;
+  font-family:   var(--pdisplay);
+  font-size:     11px;
   color:         var(--p4);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 [data-theme="fui"] .fui-index-row.fui-row-active .fui-row-id { color: var(--p2); }
 
@@ -560,7 +560,7 @@
 
 [data-theme="fui"] .fui-row-sub {
   font-family:   var(--pfont);
-  font-size:     13px;
+  font-size:     11px;
   color:         var(--p4);
   letter-spacing: 0.06em;
   white-space:   nowrap;
@@ -628,6 +628,22 @@
   z-index:    -1;
 }
 
+[data-theme="fui"] .fui-detail-scroll::before {
+  content:        attr(data-watermark, '0x000000');
+  position:       absolute;
+  bottom:         -8px;
+  right:          16px;
+  font-family:    var(--pdisplay);
+  font-size:      64px;
+  letter-spacing: 0.06em;
+  color:          var(--p1);
+  opacity:        0.04;
+  pointer-events: none;
+  z-index:        -1;
+  user-select:    none;
+  -webkit-user-select: none;
+}
+
 [data-theme="fui"] .fui-detail-scroll::-webkit-scrollbar       { width: 3px; }
 [data-theme="fui"] .fui-detail-scroll::-webkit-scrollbar-track  { background: transparent; }
 [data-theme="fui"] .fui-detail-scroll::-webkit-scrollbar-thumb  { background: var(--p4); }
@@ -656,13 +672,18 @@
 }
 [data-theme="fui"] .fui-k {
   color:          var(--p3);
+  font-size:      9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  align-self:     center;
 }
 [data-theme="fui"] .fui-k::after { content: ' :'; }
 [data-theme="fui"] .fui-v {
   color:          var(--p2);
+  font-family:    var(--pdisplay);
+  font-size:      18px;
   letter-spacing: 0.06em;
+  line-height:    1.1;
 }
 [data-theme="fui"] .fui-v-bright {
   color:      var(--p0);
@@ -670,8 +691,8 @@
 }
 
 [data-theme="fui"] .fui-detail-title {
-  font-family:    var(--pfont);
-  font-size:      24px;
+  font-family:    var(--pdisplay);
+  font-size:      36px;
   color:          var(--p0);
   line-height:    1.4;
   margin-bottom:  10px;
@@ -835,7 +856,20 @@
   text-transform: uppercase;
 }
 [data-theme="fui"] .fui-stat-k::after { content: ' :'; }
-[data-theme="fui"] .fui-stat-v { color: var(--p2); }
+[data-theme="fui"] .fui-stat-v {
+  color:       var(--p2);
+  font-family: var(--pdisplay);
+  font-size:   16px;
+  line-height: 1;
+}
+
+/* Role 3 — data numerals: CPU%, MEM% readouts */
+[data-theme="fui"] #fui-cpu-pct,
+[data-theme="fui"] #fui-mem-pct {
+  font-family:    var(--pdisplay);
+  font-size:      22px;
+  letter-spacing: 0.06em;
+}
 
 /* Coordinates / texture column */
 [data-theme="fui"] .fui-coords-col {
@@ -1409,8 +1443,8 @@
 /* ── RECV badge in panel header ──────────────────────────────────────────── */
 
 [data-theme="fui"] .fui-recv-badge {
-  font-family:    var(--pfont);
-  font-size:      8px;
+  font-family:    var(--pdisplay);
+  font-size:      22px;
   color:          var(--p4);
   letter-spacing: 0.12em;
   border:         1px solid var(--p5);
@@ -1535,7 +1569,7 @@
 }
 [data-theme="fui"] .fui-stk        { color: var(--p4); text-transform: uppercase; }
 [data-theme="fui"] .fui-stk::after { content: ':'; }
-[data-theme="fui"] .fui-stv        { color: var(--p2); font-variant-numeric: tabular-nums; }
+[data-theme="fui"] .fui-stv        { color: var(--p2); font-family: var(--pdisplay); font-size: 22px; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; line-height: 1; }
 [data-theme="fui"] .fui-sys-time-sep { color: var(--p5); }
 
 /* ── Verify flash state ──────────────────────────────────────────────────── */

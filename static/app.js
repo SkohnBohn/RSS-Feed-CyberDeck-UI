@@ -346,6 +346,7 @@ function _fuiSelectRow(row) {
 
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;
+  scroll.dataset.watermark = `0x${a.id.toString(16).toUpperCase().padStart(6,'0')}`;
 
   const gen = ++_fuiSelectGen;
 
