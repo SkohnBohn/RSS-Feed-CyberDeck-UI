@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let _fuiArticles = [];
 let _fuiActive   = null;
+let _fuiSelectGen = 0;
 
 function setupFuiPanel() {
   const dataEl = document.getElementById('fui-data');
@@ -109,6 +110,87 @@ function setupFuiPanel() {
 
   // Touch session
   setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
+
+  startFuiClock();
+  startRecvCounter();
+  startSyslog();
+}
+
+// ── Live clock + session uptime ───────────────────────────────────────────────
+function startFuiClock() {
+  const clockEl  = document.getElementById('fui-clock');
+  const uptimeEl = document.getElementById('fui-uptime');
+  if (!clockEl && !uptimeEl) return;
+  const t0 = Date.now();
+  function tick() {
+    const now = new Date();
+    if (clockEl) clockEl.textContent = now.toTimeString().slice(0, 8);
+    if (uptimeEl) {
+      const s   = Math.floor((Date.now() - t0) / 1000);
+      const hh  = String(Math.floor(s / 3600)).padStart(2, '0');
+      const mm  = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const ss  = String(s % 60).padStart(2, '0');
+      uptimeEl.textContent = `${hh}:${mm}:${ss}`;
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ── RECV counter ──────────────────────────────────────────────────────────────
+function startRecvCounter() {
+  const el = document.getElementById('fui-recv-count');
+  if (!el) return;
+  let val = Math.floor(Math.random() * 0xFFFF);
+  function bump() {
+    val = (val + Math.floor(Math.random() * 0x1FF + 1)) & 0xFFFF;
+    el.textContent = `RCV:0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
+    setTimeout(bump, 1600 + Math.random() * 2800);
+  }
+  setTimeout(bump, 800 + Math.random() * 1200);
+}
+
+// ── System log ────────────────────────────────────────────────────────────────
+const _syslogMessages = [
+  'LINK HEARTBEAT OK',
+  'PKT RECV · ACK SENT',
+  'AUTH TOKEN REFRESHED',
+  'BUFFER FLUSH COMPLETE',
+  'CHECKSUM VERIFIED',
+  'INDEX REBUILT',
+  'CONN TIMEOUT · RETRY 1/3',
+  'CONN RESTORED · STABLE',
+  'CACHE HIT RATIO: 94%',
+  'SYNC PULSE NOMINAL',
+  'COMPRESSION RATIO 3.2:1',
+  'THREAD POOL NOMINAL',
+  'HEAP ALLOCATION OK',
+  'RECV 0xA21E · DECRYPTED',
+  'UPLINK SIGNAL +82%',
+  'SECTOR SCAN COMPLETE',
+];
+
+function startSyslog() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function addLine() {
+    const msg = _syslogMessages[Math.floor(Math.random() * _syslogMessages.length)];
+    const div = document.createElement('div');
+    div.className = 'fui-syslog-line fui-sl-bright';
+    div.textContent = msg;
+    container.appendChild(div);
+    // Age out older lines
+    const lines = container.querySelectorAll('.fui-syslog-line');
+    lines.forEach((l, i) => {
+      if (i < lines.length - 1) {
+        l.classList.remove('fui-sl-bright');
+        l.classList.add('fui-sl-dim');
+      }
+    });
+    while (container.children.length > 4) container.removeChild(container.firstChild);
+    setTimeout(addLine, 2800 + Math.random() * 4500);
+  }
+  setTimeout(addLine, 1500);
 }
 
 function _fuiSelectRow(row) {
@@ -126,53 +208,77 @@ function _fuiSelectRow(row) {
   const scroll = document.getElementById('fui-detail-scroll');
   if (!scroll) return;
 
-  const typeStr   = (a.content_type || 'ARTICLE').toUpperCase();
-  const langStr   = (a.language || 'EN').toUpperCase();
-  const srcStr    = (a.source   || 'UNKNOWN').toUpperCase().slice(0, 24);
-  const dateStr   = a.date_published ? a.date_published.slice(0, 10) : '????-??-??';
-  const doiStr    = a.doi ? a.doi.slice(0, 40) : 'NULL';
-  const fetchHex  = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
+  const gen = ++_fuiSelectGen;
 
-  const titleHtml = a.url
-    ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
-    : _esc(a.title);
+  // Verifying flash
+  scroll.innerHTML = '<div class="fui-detail-verify">VERIFYING RECORD · CHECKSUM…</div>';
 
-  const authorsHtml = a.authors
-    ? `${_esc(a.authors)}${a.journal ? ' // <em>' + _esc(a.journal) + '</em>' : ''}`
-    : '';
+  setTimeout(() => {
+    if (_fuiSelectGen !== gen) return;
+    scroll.innerHTML = '<div class="fui-detail-verify fui-verify-ok">CRC OK · DECRYPTING RECORD</div>';
 
-  const abstractHtml = a.abstract
-    ? _esc(a.abstract)
-    : null;
+    setTimeout(() => {
+      if (_fuiSelectGen !== gen) return;
 
-  scroll.innerHTML = `
-    <div class="fui-kv-block">
-      <span class="fui-k">ID</span>      <span class="fui-v fui-v-bright">0x${a.id.toString(16).toUpperCase().padStart(8,'0')}</span>
-      <span class="fui-k">TYPE</span>    <span class="fui-v">${typeStr}</span>
-      <span class="fui-k">LANG</span>    <span class="fui-v">${langStr}</span>
-      <span class="fui-k">DATE</span>    <span class="fui-v">${dateStr}</span>
-      <span class="fui-k">SOURCE</span>  <span class="fui-v">${srcStr}</span>
-      <span class="fui-k">STATUS</span>  <span class="fui-v fui-v-bright">UNREAD</span>
-      <span class="fui-k">DOI</span>     <span class="fui-v">${doiStr}</span>
-      <span class="fui-k">CHKSUM</span>  <span class="fui-v">${fetchHex}</span>
-    </div>
-    <div class="fui-detail-title">${titleHtml}</div>
-    ${authorsHtml ? `<div class="fui-detail-authors">${authorsHtml}</div>` : ''}
-    ${abstractHtml
-      ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
-      : '<div class="fui-no-abstract">NO ABSTRACT IN RECORD</div>'}
-    <div class="fui-detail-actions" id="fui-actions-${a.id}">
-      <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">★ FLAG</button>
-      <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">INTERESTING</button>
-      <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">✓ READ</button>
-      <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">✕ PURGE</button>
-    </div>
-  `;
+      const typeStr  = (a.content_type || 'ARTICLE').toUpperCase();
+      const langStr  = (a.language || 'EN').toUpperCase();
+      const srcStr   = (a.source   || 'UNKNOWN').toUpperCase().slice(0, 24);
+      const dateStr  = a.date_published ? a.date_published.slice(0, 10) : '????-??-??';
+      const doiStr   = a.doi ? a.doi.slice(0, 40) : 'NULL';
+      const fetchHex = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
 
-  // Bind action buttons
-  scroll.querySelectorAll('[data-fui-action]').forEach(b => {
-    b.addEventListener('click', () => _fuiTriage(_fuiActive, b.dataset.fuiAction));
-  });
+      const titleHtml = a.url
+        ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
+        : _esc(a.title);
+
+      const authorsHtml = a.authors
+        ? `${_esc(a.authors)}${a.journal ? ' // <em>' + _esc(a.journal) + '</em>' : ''}`
+        : '';
+
+      const abstractHtml = a.abstract ? _esc(a.abstract) : null;
+
+      scroll.innerHTML = `
+        <div class="fui-kv-block">
+          <span class="fui-k">ID</span>      <span class="fui-v fui-v-bright">0x${a.id.toString(16).toUpperCase().padStart(8,'0')}</span>
+          <span class="fui-k">TYPE</span>    <span class="fui-v">${typeStr}</span>
+          <span class="fui-k">LANG</span>    <span class="fui-v">${langStr}</span>
+          <span class="fui-k">DATE</span>    <span class="fui-v">${dateStr}</span>
+          <span class="fui-k">SOURCE</span>  <span class="fui-v">${srcStr}</span>
+          <span class="fui-k">STATUS</span>  <span class="fui-v fui-v-bright">UNREAD</span>
+          <span class="fui-k">DOI</span>     <span class="fui-v">${doiStr}</span>
+          <span class="fui-k">CHKSUM</span>  <span class="fui-v">${fetchHex}</span>
+        </div>
+        <div class="fui-detail-title">${titleHtml}</div>
+        ${authorsHtml ? `<div class="fui-detail-authors">${authorsHtml}</div>` : ''}
+        ${abstractHtml
+          ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
+          : '<div class="fui-no-abstract">NO ABSTRACT IN RECORD</div>'}
+        <div class="fui-detail-actions" id="fui-actions-${a.id}">
+          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">★ FLAG</button>
+          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">INTERESTING</button>
+          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">✓ READ</button>
+          <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">✕ PURGE</button>
+        </div>
+      `;
+
+      scroll.querySelectorAll('[data-fui-action]').forEach(b => {
+        b.addEventListener('click', () => _fuiTriage(_fuiActive, b.dataset.fuiAction));
+      });
+
+      // Log the record load
+      const logEl = document.getElementById('fui-syslog-lines');
+      if (logEl) {
+        const div = document.createElement('div');
+        div.className = 'fui-syslog-line fui-sl-bright';
+        div.textContent = `RECORD 0x${a.id.toString(16).toUpperCase().padStart(4,'0')} LOADED`;
+        logEl.appendChild(div);
+        logEl.querySelectorAll('.fui-syslog-line').forEach((l, i, arr) => {
+          if (i < arr.length - 1) { l.classList.remove('fui-sl-bright'); l.classList.add('fui-sl-dim'); }
+        });
+        while (logEl.children.length > 4) logEl.removeChild(logEl.firstChild);
+      }
+    }, 160);
+  }, 290);
 }
 
 function _fuiTriage(row, action) {

@@ -14,6 +14,7 @@
   <div class="fui-index-panel">
     <div class="fui-panel-hdr">
       <span>// INPUT STREAM</span>
+      <span class="fui-recv-badge" id="fui-recv-count">RCV:0x0000</span>
       <span class="fui-panel-hdr-id">[ {{ items|length }} RECORDS ]</span>
     </div>
 
@@ -71,6 +72,7 @@
       {% endfor %}
 
     </div>{# /fui-index-list #}
+    <div class="fui-scan-beam" aria-hidden="true"></div>
   </div>{# /fui-index-panel #}
 
   {# ── Right: detail panel ───────────────────────────────────────────────── #}
@@ -90,6 +92,20 @@
     <div class="fui-instruments">
       <div class="fui-instruments-hdr">// SIGNAL ANALYSIS · SYS:NOMINAL</div>
       <div class="fui-instruments-body">
+
+        <div class="fui-signal-array">
+          <div class="fui-signal-label">SPECTRUM</div>
+          <div class="fui-signal-bars">
+            <span class="fui-sbar fui-sbar-1"></span>
+            <span class="fui-sbar fui-sbar-2"></span>
+            <span class="fui-sbar fui-sbar-3"></span>
+            <span class="fui-sbar fui-sbar-4"></span>
+            <span class="fui-sbar fui-sbar-5"></span>
+            <span class="fui-sbar fui-sbar-6"></span>
+            <span class="fui-sbar fui-sbar-7"></span>
+            <span class="fui-sbar fui-sbar-8"></span>
+          </div>
+        </div>
 
         <div class="fui-waveform-wrap">
           <div class="fui-waveform-label">INPUT FLUX</div>
@@ -123,6 +139,15 @@
 
       </div>{# /fui-instruments-body #}
     </div>{# /fui-instruments #}
+
+    <div class="fui-syslog">
+      <div class="fui-syslog-hdr">// SYSTEM LOG</div>
+      <div class="fui-syslog-lines" id="fui-syslog-lines">
+        <div class="fui-syslog-line fui-sl-dim">INIT COMPLETE · SKY.SYS v2.4</div>
+        <div class="fui-syslog-line fui-sl-dim">AUTH MODULE LOADED</div>
+        <div class="fui-syslog-line">AWAITING OPERATOR INPUT</div>
+      </div>
+    </div>
 
   </div>{# /fui-detail-panel #}
 </div>{# /fui-river-wrapper #}

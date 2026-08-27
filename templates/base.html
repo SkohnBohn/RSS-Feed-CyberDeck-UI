@@ -33,6 +33,17 @@
           <span class="app-status-dot"></span>
           LINK ESTABLISHED
         </span>
+        <div class="fui-sys-time">
+          <span class="fui-sys-time-pair">
+            <span class="fui-stk">SYS</span>
+            <span class="fui-stv" id="fui-clock">--:--:--</span>
+          </span>
+          <span class="fui-sys-time-sep">|</span>
+          <span class="fui-sys-time-pair">
+            <span class="fui-stk">UP</span>
+            <span class="fui-stv" id="fui-uptime">00:00:00</span>
+          </span>
+        </div>
       {% else %}
         <span class="app-name">Sky</span>
       {% endif %}
@@ -69,6 +80,14 @@
         <span>Settings</span>
       </a>
     </nav>
+
+    {% if ui_theme == 'fui' %}
+    <div class="fui-ticker" aria-hidden="true">
+      <div class="fui-ticker-track">
+        <span class="fui-ticker-inner">RCV·0x4F3D·PKT·OK ── LINK·NOMINAL ── BUF·82% ── AUTH·ACCEPTED ── SYNC·COMPLETE ── RCV·0xA21E ── CRC·OK ── UPLINK·STABLE ── THREAD·NOMINAL ── HEAP·OK ── RCV·0x4F3D·PKT·OK ── LINK·NOMINAL ── BUF·82% ── AUTH·ACCEPTED ── SYNC·COMPLETE ── RCV·0xA21E ── CRC·OK ── UPLINK·STABLE ── THREAD·NOMINAL ── HEAP·OK ──</span>
+      </div>
+    </div>
+    {% endif %}
 
     {% if ui_theme == 'fui' %}
     <div class="fui-dossier">
