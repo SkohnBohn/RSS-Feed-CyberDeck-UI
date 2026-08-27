@@ -664,3 +664,6 @@ mark.kw-emphasis {
 .classic-syslog .fui-syslog-line::before { content: '> '; opacity: 0.4; }
 .classic-syslog .fui-sl-dim    { opacity: 0.3; }
 .classic-syslog .fui-sl-bright { opacity: 0.75; }
+
+/* Text selection */
+::selection { background: var(--black); color: var(--yellow); }
