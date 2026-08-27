@@ -90,13 +90,16 @@
     {% endif %}
 
     {% if ui_theme == 'fui' %}
-    <div class="fui-dossier">
+    <div class="fui-dossier" id="fui-dossier">
       <div class="fui-dossier-hdr">// SUBJECT FILE</div>
-      <div class="fui-dossier-img"></div>
+      <div class="fui-dossier-img-wrap">
+        <div class="fui-dossier-img" id="fui-dossier-img"></div>
+        <div class="fui-dossier-overlay" id="fui-dossier-overlay" aria-hidden="true"></div>
+      </div>
       <div class="fui-dossier-data">
         <span class="fui-dossier-row"><span class="fui-dk">SCAN</span><span class="fui-dv">THORACIC.X77</span></span>
         <span class="fui-dossier-row"><span class="fui-dk">IDENT</span><span class="fui-dv">SUBJ-∅∅1</span></span>
-        <span class="fui-dossier-row"><span class="fui-dk">CLR</span><span class="fui-dv fui-dv--dim">CLASSIFIED</span></span>
+        <span class="fui-dossier-row"><span class="fui-dk">SIG</span><span class="fui-dv" id="fui-dossier-sig">100%</span></span>
       </div>
     </div>
     {% endif %}

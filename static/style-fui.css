@@ -1168,6 +1168,12 @@
   border-bottom:  1px solid var(--p5);
 }
 
+[data-theme="fui"] .fui-dossier-img-wrap {
+  position: relative;
+  overflow: hidden;
+  display:  block;
+}
+
 [data-theme="fui"] .fui-dossier-img {
   display:             block;
   width:               100%;
@@ -1177,6 +1183,75 @@
   background-position: center 20%;
   filter:              brightness(0.45) saturate(0.12) sepia(0.55) hue-rotate(210deg) contrast(1.5);
   mix-blend-mode:      screen;
+  transition:          filter 9s ease;
+  position:            relative;
+}
+
+/* Scanlines — rendered inside the filter stacking context (intentional) */
+[data-theme="fui"] .fui-dossier-img::before {
+  content:  '';
+  position: absolute;
+  inset:    0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.22) 0px,
+    rgba(0,0,0,0.22) 1px,
+    transparent      1px,
+    transparent      3px
+  );
+  opacity:        var(--dossier-scan, 0.35);
+  transition:     opacity 9s ease;
+  pointer-events: none;
+  z-index:        1;
+}
+
+/* Degradation tiers — time in session */
+[data-theme="fui"] .fui-dossier-img.dossier-t1 {
+  --dossier-scan: 0.5;
+  filter: brightness(0.4) saturate(0.09) sepia(0.6) hue-rotate(225deg) contrast(1.7);
+}
+[data-theme="fui"] .fui-dossier-img.dossier-t2 {
+  --dossier-scan: 0.65;
+  filter: brightness(0.34) saturate(0.06) sepia(0.7) hue-rotate(195deg) contrast(1.95) blur(0.4px);
+}
+[data-theme="fui"] .fui-dossier-img.dossier-t3 {
+  --dossier-scan: 0.78;
+  filter: brightness(0.26) saturate(0.04) sepia(0.8) hue-rotate(242deg) contrast(2.3) blur(0.9px);
+}
+[data-theme="fui"] .fui-dossier-img.dossier-t4 {
+  --dossier-scan: 0.88;
+  filter: brightness(0.18) saturate(0.02) grayscale(0.7) contrast(2.7) blur(1.6px) sepia(0.4);
+}
+
+/* Spike overlay — sibling div, outside the filtered element */
+@keyframes dossierSpike {
+  0%   { opacity: 0;    top: 15%; height: 10px; }
+  12%  { opacity: 0.75; top: 15%; }
+  35%  { opacity: 0.45; top: 55%; height: 8px; }
+  55%  { opacity: 0.6;  top: 30%; height: 14px; }
+  80%  { opacity: 0.18; top: 70%; }
+  100% { opacity: 0;    top: 85%; }
+}
+
+[data-theme="fui"] .fui-dossier-overlay {
+  position:       absolute;
+  left:           0;
+  right:          0;
+  top:            40%;
+  height:         10px;
+  background:     linear-gradient(
+    to bottom,
+    transparent,
+    rgba(180,184,255,0.55) 50%,
+    transparent
+  );
+  opacity:        0;
+  pointer-events: none;
+  z-index:        2;
+}
+
+[data-theme="fui"] .fui-dossier-overlay.dossier-spike {
+  animation: dossierSpike 0.65s ease-out forwards;
 }
 
 [data-theme="fui"] .fui-dossier-data {
@@ -1360,9 +1435,11 @@
 /* CPU canvas (startSysMetrics) is data — JS respects this flag and stops
    glitch effects but keeps the live graph. All CSS flicker/sweep stops. */
 @media (prefers-reduced-motion: reduce) {
-  [data-theme="fui"] body            { animation: none; }
-  [data-theme="fui"] .fui-scan-beam  { animation: none; opacity: 0; }
-  [data-theme="fui"] .fui-ticker-inner { animation: none; }
-  [data-theme="fui"] .fui-row-glitch { animation: none; }
-  [data-theme="fui"] *               { transition-duration: 0.01ms !important; }
+  [data-theme="fui"] body                            { animation: none; }
+  [data-theme="fui"] .fui-scan-beam                  { animation: none; opacity: 0; }
+  [data-theme="fui"] .fui-ticker-inner               { animation: none; }
+  [data-theme="fui"] .fui-row-glitch                 { animation: none; }
+  [data-theme="fui"] .fui-dossier-overlay.dossier-spike { animation: none; }
+  [data-theme="fui"] .fui-dossier-img                { transition: none; }
+  [data-theme="fui"] *                               { transition-duration: 0.01ms !important; }
 }

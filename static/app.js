@@ -70,9 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFuiPanel();
     startGlitchEffects();
     startSysMetrics();
-  } else {
+  } else if (!isFui) {
     applyKeywordFilters();
     setupKeyboardTriage();
+  }
+
+  if (isFui) {
+    startDossierDegradation();
   }
 
   // Shared ambient — element-guarded; auto-activates in whichever theme has the DOM element
@@ -309,6 +313,7 @@ function _fuiSelectRow(row) {
 function _fuiTriage(row, action) {
   if (!row) return;
   const id = row.dataset.id;
+  _dossierSpike();
   fetch(`/action/${id}/${action}`, { method: 'POST' }).then(() => {
     row.style.transition = 'opacity 0.15s, transform 0.15s';
     row.style.opacity    = '0';
@@ -344,6 +349,54 @@ function _esc(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ── Dossier degradation — x-ray corrupts with session age + triage ────────────
+const _dossierT0 = Date.now();
+let   _dossierCurrentTier = 0;
+
+const _dossierTiers = [
+  { minMin: 0,  sig: '100%', cls: ''          },
+  { minMin: 15, sig: '82%',  cls: 'dossier-t1' },
+  { minMin: 30, sig: '61%',  cls: 'dossier-t2' },
+  { minMin: 60, sig: '38%',  cls: 'dossier-t3' },
+  { minMin: 90, sig: '12%',  cls: 'dossier-t4' },
+];
+
+function startDossierDegradation() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const img   = document.getElementById('fui-dossier-img');
+  const sigEl = document.getElementById('fui-dossier-sig');
+  if (!img) return;
+
+  function applyTier(tier) {
+    if (tier === _dossierCurrentTier) return;
+    _dossierCurrentTier = tier;
+    const t = _dossierTiers[tier];
+    img.classList.remove(..._dossierTiers.map(t => t.cls).filter(Boolean));
+    if (t.cls) img.classList.add(t.cls);
+    if (sigEl) sigEl.textContent = t.sig;
+  }
+
+  function checkTier() {
+    const elapsed = (Date.now() - _dossierT0) / 60000;
+    let tier = 0;
+    for (let i = _dossierTiers.length - 1; i >= 0; i--) {
+      if (elapsed >= _dossierTiers[i].minMin) { tier = i; break; }
+    }
+    applyTier(tier);
+    setTimeout(checkTier, 30000);
+  }
+  checkTier();
+}
+
+function _dossierSpike() {
+  const overlay = document.getElementById('fui-dossier-overlay');
+  if (!overlay || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  overlay.classList.remove('dossier-spike');
+  void overlay.offsetWidth; // reflow to restart animation
+  overlay.classList.add('dossier-spike');
+  setTimeout(() => overlay.classList.remove('dossier-spike'), 700);
 }
 
 function startGlitchEffects() {
