@@ -73,6 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
     applyKeywordFilters();
     setupKeyboardTriage();
   }
+
+  // Shared ambient — element-guarded; auto-activates in whichever theme has the DOM element
+  startFuiClock();
+  startRecvCounter();
+  startSyslog();
 });
 
 // ── FUI split-panel ──────────────────────────────────────────────────────────
@@ -108,12 +113,31 @@ function setupFuiPanel() {
     _fuiTriage(_fuiActive, act);
   });
 
+  // Arrow keys navigate index rows; F/I/R/Del triage active article
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const rows = [...document.querySelectorAll('.fui-index-row')];
+      if (!rows.length) return;
+      const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
+      const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
+      if (rows[ni] && rows[ni] !== _fuiActive) {
+        _fuiSelectRow(rows[ni]);
+        rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      return;
+    }
+    if (!_fuiActive) return;
+    const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
+    const act = map[e.key];
+    if (!act) return;
+    e.preventDefault();
+    _fuiTriage(_fuiActive, act);
+  });
+
   // Touch session
   setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
-
-  startFuiClock();
-  startRecvCounter();
-  startSyslog();
 }
 
 // ── Live clock + session uptime ───────────────────────────────────────────────
@@ -394,23 +418,48 @@ function applyKeywordFilters() {
 }
 
 // ── Keyboard triage shortcuts ─────────────────────────────────────────────────
-// Hover a card to focus it. Then: F = flag, I = interesting, R = read, Del = delete
+// Arrow keys navigate cards. F/I/R/Del triage focused card. Enter opens article.
 function setupKeyboardTriage() {
   const list = document.getElementById('article-list');
   if (!list) return;
 
   let focused = null;
 
-  list.addEventListener('mouseover', e => {
-    const card = e.target.closest('.card');
-    if (!card) return;
+  function focusCard(card) {
     if (focused) focused.classList.remove('card-focused');
     focused = card;
-    focused.classList.add('card-focused');
+    if (focused) {
+      focused.classList.add('card-focused');
+      focused.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function moveCard(delta) {
+    const cards = [...list.querySelectorAll('.card:not(.card--suppressed)')];
+    const ci    = focused ? cards.indexOf(focused) : -1;
+    const ni    = Math.max(0, Math.min(cards.length - 1, ci + delta));
+    if (cards[ni]) focusCard(cards[ni]);
+  }
+
+  list.addEventListener('mouseover', e => {
+    const card = e.target.closest('.card');
+    if (card) focusCard(card);
   });
 
   document.addEventListener('keydown', e => {
-    if (!focused || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveCard(1);  return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); moveCard(-1); return; }
+
+    if (e.key === 'Enter' && focused) {
+      e.preventDefault();
+      const link = focused.querySelector('a.card-title');
+      if (link) window.open(link.href, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (!focused) return;
     const id = focused.dataset.id;
     if (!id) return;
 
@@ -420,12 +469,14 @@ function setupKeyboardTriage() {
 
     e.preventDefault();
     fetch(`/action/${id}/${act}`, { method: 'POST' }).then(() => {
+      const next = focused.nextElementSibling?.closest?.('.card') || focused.previousElementSibling?.closest?.('.card');
       focused.style.transition = 'opacity 0.15s, transform 0.15s';
       focused.style.opacity    = '0';
       focused.style.transform  = 'translateX(6px)';
       setTimeout(() => {
         focused?.remove();
         focused = null;
+        if (next) focusCard(next);
       }, 160);
     });
   });

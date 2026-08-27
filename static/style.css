@@ -618,3 +618,49 @@ mark.kw-emphasis {
   outline: 2px solid var(--black);
   outline-offset: 2px;
 }
+
+/* ── Shared ambient elements (classic styling) ────────────────────────────── */
+
+/* Clock / uptime strip — appears in both themes; FUI overrides in style-fui.css */
+.fui-sys-time {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  margin-top:     8px;
+  font-family:    var(--font);
+  font-size:      0.67rem;
+  color:          var(--muted);
+  opacity:        0.8;
+}
+.fui-sys-time-pair { display: flex; gap: 4px; align-items: center; }
+.fui-stk            { font-weight: 700; font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.fui-stk::after     { content: ':'; }
+.fui-stv            { font-variant-numeric: tabular-nums; }
+.fui-sys-time-sep   { opacity: 0.35; }
+
+/* Activity syslog (classic river) */
+.classic-syslog {
+  margin:         16px 20px 24px;
+  padding:        8px 14px;
+  border:         1px solid rgba(26,26,26,0.14);
+  border-radius:  6px;
+  background:     rgba(26,26,26,0.03);
+}
+.classic-syslog .fui-syslog-hdr {
+  font-family:    var(--font);
+  font-size:      0.62rem;
+  font-weight:    700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--muted);
+  margin-bottom:  4px;
+}
+.classic-syslog .fui-syslog-line {
+  font-family:    monospace;
+  font-size:      0.72rem;
+  color:          var(--black-soft);
+  transition:     opacity 0.6s;
+}
+.classic-syslog .fui-syslog-line::before { content: '> '; opacity: 0.4; }
+.classic-syslog .fui-sl-dim    { opacity: 0.3; }
+.classic-syslog .fui-sl-bright { opacity: 0.75; }
