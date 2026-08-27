@@ -1,6 +1,139 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% if ui_theme == 'fui' %}
+
+{# ── FUI diagnostic split-panel layout ──────────────────────────────────── #}
+
+{% set new_items  = items | selectattr("is_new", "equalto", 1) | list %}
+{% set seen_items = items | selectattr("is_new", "equalto", 0) | list %}
+
+<div class="fui-river-wrapper">
+
+  {# ── Left: compact index panel ─────────────────────────────────────────── #}
+  <div class="fui-index-panel">
+    <div class="fui-panel-hdr">
+      <span>// INPUT STREAM</span>
+      <span class="fui-panel-hdr-id">[ {{ items|length }} RECORDS ]</span>
+    </div>
+
+    <div class="fui-index-list" id="fui-index-list">
+
+      {% if not items %}
+      <div class="fui-detail-empty" style="padding:40px 14px;text-align:left">
+        {% if fetch_running %}FETCHING — STANDBY{% else %}NO RECORDS IN BUFFER{% endif %}
+      </div>
+      {% endif %}
+
+      {% if new_items %}
+      <div class="fui-index-marker">
+        <div class="fui-index-marker-line"></div>
+        <span>NEW // {{ new_items|length }}</span>
+        <div class="fui-index-marker-line"></div>
+      </div>
+      {% endif %}
+
+      {% for a in new_items %}
+      <div class="fui-index-row fui-row-new {% if loop.first and not seen_items %}fui-row-active{% endif %}"
+           data-id="{{ a.id }}" data-idx="{{ loop.index0 }}" tabindex="0">
+        <div class="fui-row-lead">
+          <span class="fui-row-id">{{ '%04X' % a.id }}</span>
+          <span class="fui-row-status fui-status-new">●</span>
+        </div>
+        <div class="fui-row-body">
+          <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
+          <div class="fui-row-sub">{{ (a.source or 'SRC')[:18]|upper }} ·· {{ (a.language or 'en')|upper }} ·· {{ a.date_published[:7] if a.date_published else '??-????' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if seen_items %}
+      <div class="fui-index-marker">
+        <div class="fui-index-marker-line"></div>
+        <span>PREV{% if last_opened %} // {{ last_opened[:10] }}{% endif %}</span>
+        <div class="fui-index-marker-line"></div>
+      </div>
+      {% endif %}
+
+      {% for a in seen_items %}
+      {% set global_idx = new_items|length + loop.index0 %}
+      <div class="fui-index-row {% if new_items|length == 0 and loop.first %}fui-row-active{% endif %}"
+           data-id="{{ a.id }}" data-idx="{{ global_idx }}" tabindex="0">
+        <div class="fui-row-lead">
+          <span class="fui-row-id">{{ '%04X' % a.id }}</span>
+          <span class="fui-row-status">○</span>
+        </div>
+        <div class="fui-row-body">
+          <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
+          <div class="fui-row-sub">{{ (a.source or 'SRC')[:18]|upper }} ·· {{ (a.language or 'en')|upper }} ·· {{ a.date_published[:7] if a.date_published else '??-????' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>{# /fui-index-list #}
+  </div>{# /fui-index-panel #}
+
+  {# ── Right: detail panel ───────────────────────────────────────────────── #}
+  <div class="fui-detail-panel">
+    <div class="fui-panel-hdr">
+      <span>// RECORD DETAIL</span>
+      <span class="fui-panel-hdr-id" id="fui-detail-id">[ SELECT RECORD ]</span>
+    </div>
+
+    <div class="fui-detail-scroll" id="fui-detail-scroll">
+      <div class="fui-detail-empty" id="fui-detail-content">
+        {% if items %}SELECT A RECORD FROM THE INDEX{% elif fetch_running %}FETCHING — STANDBY{% else %}NO RECORDS IN BUFFER{% endif %}
+      </div>
+    </div>
+
+    {# Instruments strip #}
+    <div class="fui-instruments">
+      <div class="fui-instruments-hdr">// SIGNAL ANALYSIS · SYS:NOMINAL</div>
+      <div class="fui-instruments-body">
+
+        <div class="fui-waveform-wrap">
+          <div class="fui-waveform-label">INPUT FLUX</div>
+          <svg class="fui-waveform" viewBox="0 0 300 36" preserveAspectRatio="none">
+            <g class="fui-wave-track">
+              <polyline class="fui-wave" points="
+                0,18 12,10 20,26 32,6  44,30 54,14 64,22 74,8  84,28 96,20
+                106,12 116,32 128,16 138,24 150,4  162,28 170,18 182,10 194,26 206,16
+                216,30 226,12 238,22 250,8  260,28 272,18 284,10 296,24 300,18
+                300,18 312,10 320,26 332,6  344,30 354,14 364,22 374,8  384,28 396,20
+                406,12 416,32 428,16 438,24 450,4  462,28 470,18 482,10 494,26 506,16
+                516,30 526,12 538,22 550,8  560,28 572,18 584,10 596,24 600,18
+              "/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="fui-stats-col">
+          <div class="fui-stat"><span class="fui-stat-k">BUFFER</span><span class="fui-stat-v">{{ items|length }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">NEW</span><span class="fui-stat-v">{{ new_items|length }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">FLAGGED</span><span class="fui-stat-v">{{ counts.flagged }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">READ</span><span class="fui-stat-v">{{ counts.read }}</span></div>
+        </div>
+
+        <div class="fui-coords-col">
+          <span>SIG: ████████░░ 82%</span>
+          <span>LAT: 52.519°N</span>
+          <span>LON: 013.405°E</span>
+          <span>CRC: 0x{{ '%04X' % (items|length * 137 + 0x4A2F) }}</span>
+        </div>
+
+      </div>{# /fui-instruments-body #}
+    </div>{# /fui-instruments #}
+
+  </div>{# /fui-detail-panel #}
+</div>{# /fui-river-wrapper #}
+
+{# Embed article data for JS #}
+<script id="fui-data" type="application/json">{{ articles_json | safe }}</script>
+
+{% else %}
+
+{# ── Classic card-list layout ────────────────────────────────────────────── #}
+
 {% macro render_card(a) %}
 <article class="card card--{{ a.content_type or 'article' }}" id="card-{{ a.id }}"
          data-id="{{ a.id }}"
@@ -106,5 +239,7 @@
   {% endif %}
 
 </div>
+
+{% endif %}{# /ui_theme == 'fui' #}
 
 {% endblock %}

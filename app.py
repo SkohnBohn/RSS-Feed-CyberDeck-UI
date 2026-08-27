@@ -1,3 +1,4 @@
+import json
 import threading
 from datetime import datetime, timezone
 
@@ -59,6 +60,10 @@ def river():
     items       = db.get_river(last_opened_at=last_opened, collection_id=col_id)
     keywords    = db.get_keyword_filters()
     ctx         = _base_ctx()
+    # Serialize articles for FUI JS panel
+    _safe_keys = ("id","title","authors","journal","date_published","abstract",
+                  "url","language","source","content_type","doi")
+    articles_json = json.dumps([{k: a.get(k) for k in _safe_keys} for a in items])
     return render_template(
         "river.html",
         items=items,
@@ -67,6 +72,7 @@ def river():
         last_opened=last_opened,
         active_collection=col_id,
         keywords=keywords,
+        articles_json=articles_json,
         **ctx,
     )
 
