@@ -80,6 +80,7 @@
   --p7:  #050608;   /* page bg */
   --pfont: 'Share Tech Mono', monospace;
   --pdisplay: 'VT323', monospace;
+  zoom: 1.15;
 }
 
 /* ── Reset for FUI ───────────────────────────────────────────────────────── */

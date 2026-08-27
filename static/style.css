@@ -8,6 +8,8 @@
   --font: -apple-system, 'Inter', 'DM Sans', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
 }
 
+html { font-size: 17px; }
+
 * {
   margin: 0;
   padding: 0;
