@@ -66,6 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
   }
 
+  if (isFui) {
+    setupFuiKeyboard(isRiver);
+    startDossierDegradation();
+  }
+
   if (isFui && isRiver) {
     setupFuiPanel();
     startGlitchEffects();
@@ -73,10 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (!isFui) {
     applyKeywordFilters();
     setupKeyboardTriage();
-  }
-
-  if (isFui) {
-    startDossierDegradation();
   }
 
   // Shared ambient — element-guarded; auto-activates in whichever theme has the DOM element
@@ -87,15 +88,119 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── FUI split-panel ──────────────────────────────────────────────────────────
 
-let _fuiArticles  = [];
-let _fuiActive    = null;
-let _fuiSelectGen = 0;
+let _fuiArticles   = [];
+let _fuiActive     = null;
+let _fuiSelectGen  = 0;
 let _fuiPanelFocus = 'index'; // 'index' | 'detail'
 
 function _setFuiPanelFocus(which) {
   _fuiPanelFocus = which;
   document.querySelector('.fui-index-panel')?.classList.toggle('fui-panel-focused', which === 'index');
   document.querySelector('.fui-detail-panel')?.classList.toggle('fui-panel-focused', which === 'detail');
+}
+
+// ── Unified keyboard zone system (sidebar ↔ index ↔ detail) ─────────────────
+let _navItems      = [];
+let _navCursor     = -1;
+let _sidebarActive = false;
+
+function _activateSidebar() {
+  _sidebarActive = true;
+  document.querySelector('.sidebar-nav')?.classList.add('sidebar-nav-focused');
+  if (_navCursor < 0) _navCursor = Math.max(0, _navItems.findIndex(el => el.classList.contains('active')));
+  _navSetCursor(_navCursor);
+  // Remove panel focus indicator while sidebar is active
+  document.querySelector('.fui-index-panel')?.classList.remove('fui-panel-focused');
+  document.querySelector('.fui-detail-panel')?.classList.remove('fui-panel-focused');
+}
+
+function _deactivateSidebar(returnZone) {
+  _sidebarActive = false;
+  document.querySelector('.sidebar-nav')?.classList.remove('sidebar-nav-focused');
+  _navItems.forEach(el => el.classList.remove('nav-kbd-cursor'));
+  if (returnZone) _setFuiPanelFocus(returnZone);
+}
+
+function _navSetCursor(idx) {
+  _navCursor = Math.max(0, Math.min(_navItems.length - 1, idx));
+  _navItems.forEach((el, i) => el.classList.toggle('nav-kbd-cursor', i === _navCursor));
+}
+
+function setupFuiKeyboard(isRiver) {
+  _navItems = [...document.querySelectorAll('.sidebar-nav .nav-item')];
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // ── Sidebar zone ─────────────────────────────────────────────────────
+    if (_sidebarActive) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        _navSetCursor(_navCursor + (e.key === 'ArrowDown' ? 1 : -1));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_navItems[_navCursor]) window.location.href = _navItems[_navCursor].href;
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        _deactivateSidebar(isRiver ? 'index' : null);
+        return;
+      }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); return; }
+      return;
+    }
+
+    // ── Left → enter sidebar (or retreat panel) ───────────────────────────
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (isRiver && _fuiPanelFocus === 'detail') {
+        _setFuiPanelFocus('index');
+      } else {
+        _activateSidebar();
+      }
+      return;
+    }
+
+    // ── Right → advance panel (river only) ───────────────────────────────
+    if (e.key === 'ArrowRight' && isRiver) {
+      e.preventDefault();
+      _setFuiPanelFocus('detail');
+      return;
+    }
+
+    // ── Up/Down — context-sensitive ───────────────────────────────────────
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (isRiver && _fuiPanelFocus === 'detail') {
+        const scroll = document.getElementById('fui-detail-scroll');
+        if (scroll) scroll.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
+      } else if (isRiver) {
+        const rows = [...document.querySelectorAll('.fui-index-row')];
+        if (!rows.length) return;
+        const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
+        const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
+        if (rows[ni] && rows[ni] !== _fuiActive) {
+          _fuiSelectRow(rows[ni]);
+          rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else {
+        const main = document.querySelector('.main');
+        if (main) main.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    // ── Triage (river only) ───────────────────────────────────────────────
+    if (!isRiver || !_fuiActive) return;
+    const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
+    const act = map[e.key];
+    if (!act) return;
+    e.preventDefault();
+    _fuiTriage(_fuiActive, act);
+  });
 }
 
 function setupFuiPanel() {
@@ -106,57 +211,13 @@ function setupFuiPanel() {
   const list = document.getElementById('fui-index-list');
   if (!list) return;
 
-  // Select first row on load; index panel starts focused
   const firstRow = list.querySelector('.fui-index-row');
   if (firstRow) _fuiSelectRow(firstRow);
   _setFuiPanelFocus('index');
 
   list.addEventListener('click', e => {
     const row = e.target.closest('.fui-index-row');
-    if (row) { _fuiSelectRow(row); _setFuiPanelFocus('index'); }
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-    // ← / → switch panel focus
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      _setFuiPanelFocus('index');
-      return;
-    }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      _setFuiPanelFocus('detail');
-      return;
-    }
-
-    // ↑ / ↓ — context-sensitive
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (_fuiPanelFocus === 'detail') {
-        const scroll = document.getElementById('fui-detail-scroll');
-        if (scroll) scroll.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
-      } else {
-        const rows = [...document.querySelectorAll('.fui-index-row')];
-        if (!rows.length) return;
-        const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
-        const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
-        if (rows[ni] && rows[ni] !== _fuiActive) {
-          _fuiSelectRow(rows[ni]);
-          rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }
-      return;
-    }
-
-    // F / I / R / Del — triage active article from either panel
-    if (!_fuiActive) return;
-    const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
-    const act = map[e.key];
-    if (!act) return;
-    e.preventDefault();
-    _fuiTriage(_fuiActive, act);
+    if (row) { _fuiSelectRow(row); _deactivateSidebar('index'); }
   });
 
   // Touch session
