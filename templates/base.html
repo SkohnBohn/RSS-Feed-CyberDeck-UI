@@ -1,15 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" {% if ui_theme == 'fui' %}data-theme="fui"{% endif %}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sky</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style-fui.css">
 </head>
 <body>
+
+  {% if ui_theme == 'fui' %}
+  <div class="fui-scanline"></div>
+  <div class="fui-vignette"></div>
+  {% endif %}
+
   <aside class="sidebar">
+
+    {% if ui_theme == 'fui' %}
+    <span class="sidebar-bracket sidebar-bracket--tl"></span>
+    <span class="sidebar-bracket sidebar-bracket--tr"></span>
+    <span class="sidebar-bracket sidebar-bracket--bl"></span>
+    <span class="sidebar-bracket sidebar-bracket--br"></span>
+    {% endif %}
+
     <div class="sidebar-top">
-      <span class="app-name">Sky</span>
+      {% if ui_theme == 'fui' %}
+        <span class="app-name">SKY.SYS</span>
+        <span class="app-subtitle">ARTICLE INTAKE // v2.4</span>
+        <span class="app-status">
+          <span class="app-status-dot"></span>
+          LINK ESTABLISHED
+        </span>
+      {% else %}
+        <span class="app-name">Sky</span>
+      {% endif %}
     </div>
 
     <nav class="sidebar-nav">

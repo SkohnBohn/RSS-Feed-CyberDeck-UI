@@ -9,6 +9,16 @@
 <div class="banner">Saved.</div>
 {% endif %}
 
+<!-- ── UI Theme ── -->
+<section class="settings-section">
+  <h3 class="settings-heading">Interface Theme</h3>
+  <p class="settings-note">Choose between the classic yellow-black interface or the FUI terminal aesthetic.</p>
+  <form method="POST" action="/settings/theme" class="theme-toggle-group">
+    <button class="theme-toggle-btn {% if ui_theme != 'fui' %}active{% endif %}" type="submit" name="ui_theme" value="classic">Classic</button>
+    <button class="theme-toggle-btn {% if ui_theme == 'fui' %}active{% endif %}" type="submit" name="ui_theme" value="fui">FUI</button>
+  </form>
+</section>
+
 <!-- ── Collections ── -->
 <section class="settings-section">
   <h3 class="settings-heading">Collections</h3>

@@ -41,6 +41,7 @@ def _base_ctx():
         "counts":        db.get_counts(),
         "collections":   db.get_collections(),
         "fetch_running": fetch_state["running"],
+        "ui_theme":      db.get_setting("ui_theme", "classic"),
     }
 
 
@@ -211,6 +212,16 @@ def add_keyword():
 def delete_keyword(filter_id):
     db.delete_keyword_filter(filter_id)
     return "", 204
+
+
+# ── Theme ─────────────────────────────────────────────────────────────────────
+
+@app.route("/settings/theme", methods=["POST"])
+def save_theme():
+    theme = request.form.get("ui_theme", "classic")
+    if theme in ("classic", "fui"):
+        db.set_setting("ui_theme", theme)
+    return redirect(url_for("settings"))
 
 
 if __name__ == "__main__":
