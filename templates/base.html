@@ -13,8 +13,8 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="/inbox" class="nav-item {% if section == 'inbox' %}active{% endif %}">
-        <span>Inbox</span>
+      <a href="/river" class="nav-item {% if section == 'river' %}active{% endif %}">
+        <span>River</span>
         {% if counts.unread %}<span class="nav-count">{{ counts.unread }}</span>{% endif %}
       </a>
       <a href="/flagged" class="nav-item {% if section == 'flagged' %}active{% endif %}">
@@ -25,10 +25,20 @@
         <span>Interesting</span>
         {% if counts.interesting %}<span class="nav-count">{{ counts.interesting }}</span>{% endif %}
       </a>
-      <a href="/read-later" class="nav-item {% if section == 'read-later' %}active{% endif %}">
-        <span>Read Later</span>
-        {% if counts.read_later %}<span class="nav-count">{{ counts.read_later }}</span>{% endif %}
+      <a href="/read" class="nav-item {% if section == 'read' %}active{% endif %}">
+        <span>Read</span>
       </a>
+
+      {% if collections %}
+      <div class="nav-divider"></div>
+      {% for col in collections %}
+      <a href="/river?collection={{ col.id }}" class="nav-item nav-collection {% if section == 'river' and active_collection == col.id %}active{% endif %}">
+        <span>{{ col.name }}</span>
+      </a>
+      {% endfor %}
+      {% endif %}
+
+      <div class="nav-divider"></div>
       <a href="/settings" class="nav-item {% if section == 'settings' %}active{% endif %}">
         <span>Settings</span>
       </a>
@@ -38,9 +48,6 @@
       <button class="fetch-btn" id="fetch-btn" onclick="triggerFetch()">
         {% if fetch_running %}Fetching…{% else %}Fetch Now{% endif %}
       </button>
-      <div class="total-count">
-        {{ (counts.unread + counts.flagged + counts.interesting + counts.read_later) }}<span class="total-label"> art.</span>
-      </div>
     </div>
   </aside>
 

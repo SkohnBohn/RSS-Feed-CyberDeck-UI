@@ -6,15 +6,122 @@
 </div>
 
 {% if saved %}
-<div class="banner">Queries saved.</div>
+<div class="banner">Saved.</div>
 {% endif %}
+
+<!-- ── Collections ── -->
+<section class="settings-section">
+  <h3 class="settings-heading">Collections</h3>
+  <p class="settings-note">Group sources into named collections. Browse a collection via the sidebar.</p>
+
+  <div class="feed-list" id="collection-list">
+    {% for col in collections %}
+    <div class="feed-row" id="col-{{ col.id }}">
+      <span class="feed-name">{{ col.name }}</span>
+      <button class="btn btn-delete" title="Remove"
+        hx-post="/settings/collections/{{ col.id }}/delete"
+        hx-target="#col-{{ col.id }}"
+        hx-swap="outerHTML swap:150ms">✕</button>
+    </div>
+    {% else %}
+    <p class="settings-note" style="margin:0">No collections yet.</p>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="/settings/collections/add" class="add-feed-form" style="margin-top:12px">
+    <input class="field-input" type="text" name="name" placeholder="Collection name" required>
+    <button class="btn" type="submit">Add</button>
+  </form>
+</section>
+
+<!-- ── Keyword Filters ── -->
+<section class="settings-section">
+  <h3 class="settings-heading">Keyword Filters</h3>
+  <p class="settings-note">
+    <strong>Emphasize</strong> — highlights matching words in titles and abstracts.<br>
+    <strong>Suppress</strong> — hides matching items by default (toggle to reveal).
+  </p>
+
+  <div class="feed-list" id="keyword-list">
+    {% for kf in keyword_filters %}
+    <div class="feed-row" id="kf-{{ kf.id }}">
+      <span class="lang-chip lang-chip--{{ kf.mode }}">{{ kf.mode | upper }}</span>
+      <span class="feed-name">{{ kf.keyword }}</span>
+      <button class="btn btn-delete" title="Remove"
+        hx-post="/settings/keywords/{{ kf.id }}/delete"
+        hx-target="#kf-{{ kf.id }}"
+        hx-swap="outerHTML swap:150ms">✕</button>
+    </div>
+    {% else %}
+    <p class="settings-note" style="margin:0">No keyword filters yet.</p>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="/settings/keywords/add" class="add-feed-form" style="margin-top:12px">
+    <input class="field-input" type="text" name="keyword" placeholder="Keyword or phrase" required>
+    <select class="field-input field-select" name="mode">
+      <option value="emphasize">Emphasize</option>
+      <option value="suppress">Suppress</option>
+    </select>
+    <button class="btn" type="submit">Add</button>
+  </form>
+</section>
+
+<!-- ── Sources ── -->
+<section class="settings-section">
+  <h3 class="settings-heading">Sources</h3>
+  <p class="settings-note">
+    Add any RSS/Atom feed, YouTube channel feed
+    (<code>youtube.com/feeds/videos.xml?channel_id=…</code>),
+    or Mastodon account feed (<code>mastodon.social/@user.rss</code>).
+    No keyword filtering for feeds — everything they publish is fetched.
+  </p>
+
+  <div class="feed-list" id="feed-list">
+    {% for feed in feeds %}
+    <div class="feed-row" id="feed-{{ feed.id }}">
+      <span class="lang-chip">{{ feed.lang | upper }}</span>
+      <span class="type-chip type-chip--{{ feed.feed_type or 'rss' }}">{{ (feed.feed_type or 'rss') | upper }}</span>
+      <span class="feed-name">{{ feed.name }}</span>
+      <span class="feed-url">{{ feed.url }}</span>
+      <button class="btn btn-delete" title="Remove"
+        hx-post="/settings/feeds/{{ feed.id }}/delete"
+        hx-target="#feed-{{ feed.id }}"
+        hx-swap="outerHTML swap:150ms">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="/settings/feeds/add" class="add-feed-form">
+    <input class="field-input" type="text" name="name" placeholder="Source name" required>
+    <input class="field-input" type="url"  name="url"  placeholder="Feed URL" required>
+    <select class="field-input field-select" name="feed_type">
+      <option value="rss">RSS</option>
+      <option value="youtube">YouTube</option>
+      <option value="mastodon">Mastodon</option>
+    </select>
+    <select class="field-input field-select" name="lang">
+      <option value="en">EN</option>
+      <option value="de">DE</option>
+      <option value="fr">FR</option>
+      <option value="es">ES</option>
+    </select>
+    <select class="field-input field-select" name="collection_id">
+      <option value="">No collection</option>
+      {% for col in collections %}
+      <option value="{{ col.id }}">{{ col.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">Add Source</button>
+  </form>
+</section>
 
 <!-- ── API Queries ── -->
 <form method="POST" action="/settings/queries">
   <section class="settings-section">
-    <h3 class="settings-heading">API Queries</h3>
+    <h3 class="settings-heading">Academic API Queries</h3>
     <p class="settings-note">
-      OpenAlex uses plain keyword terms (supports OR). BASE supports Solr wildcards — <code>surrealis*</code> matches all variants.
+      OpenAlex: plain keyword terms (supports OR). BASE: Solr wildcards — <code>surrealis*</code> matches all variants.
     </p>
 
     <div class="field-group">
@@ -43,38 +150,5 @@
     <button class="btn btn-save" type="submit">Save Queries</button>
   </section>
 </form>
-
-<!-- ── RSS Feeds ── -->
-<section class="settings-section">
-  <h3 class="settings-heading">RSS Feeds</h3>
-  <p class="settings-note">
-    RSS feeds pull everything a journal publishes, filtered by date. No keyword matching.
-  </p>
-
-  <div class="feed-list" id="feed-list">
-    {% for feed in feeds %}
-    <div class="feed-row" id="feed-{{ feed.id }}">
-      <span class="lang-chip">{{ feed.lang | upper }}</span>
-      <span class="feed-name">{{ feed.name }}</span>
-      <span class="feed-url">{{ feed.url }}</span>
-      <button class="btn btn-delete" title="Remove"
-        hx-post="/settings/feeds/{{ feed.id }}/delete"
-        hx-target="#feed-{{ feed.id }}"
-        hx-swap="outerHTML swap:150ms">✕</button>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- Add feed form -->
-  <form method="POST" action="/settings/feeds/add" class="add-feed-form">
-    <input class="field-input" type="text"   name="name" placeholder="Journal name" required>
-    <input class="field-input" type="url"    name="url"  placeholder="RSS feed URL" required>
-    <select class="field-input field-select" name="lang">
-      <option value="en">EN</option>
-      <option value="de">DE</option>
-    </select>
-    <button class="btn" type="submit">Add Feed</button>
-  </form>
-</section>
 
 {% endblock %}

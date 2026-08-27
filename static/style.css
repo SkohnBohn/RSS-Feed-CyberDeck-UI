@@ -87,6 +87,18 @@ body {
   color: var(--yellow);
 }
 
+.nav-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.15);
+  margin: 6px 10px;
+}
+
+.nav-collection {
+  font-size: 0.78rem;
+  padding: 7px 12px;
+  opacity: 0.85;
+}
+
 .sidebar-bottom {
   padding-top: 20px;
   border-top: 2px solid var(--black);
@@ -94,6 +106,8 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+
+/* removed: .total-count / .total-label (no ambient count anxiety) */
 
 .fetch-btn {
   width: 100%;
@@ -153,7 +167,8 @@ body {
   letter-spacing: -0.035em;
 }
 
-.view-count {
+.view-count,
+.view-meta {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted);
@@ -451,4 +466,146 @@ body {
 .add-feed-form .field-input {
   flex: 1;
   min-width: 140px;
+}
+
+/* ── Content type chip ─────────────────────────────────────── */
+
+.type-chip {
+  flex-shrink: 0;
+  margin-top: 3px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1.5px solid var(--black);
+  background: transparent;
+  color: var(--black);
+}
+
+.type-chip--video    { border-color: #b05000; color: #b05000; }
+.type-chip--image    { border-color: #006080; color: #006080; }
+.type-chip--podcast  { border-color: #600080; color: #600080; }
+.type-chip--post     { border-color: #004030; color: #004030; }
+.type-chip--paper    { border-color: var(--muted); color: var(--muted); }
+.type-chip--youtube  { border-color: #b05000; color: #b05000; }
+.type-chip--mastodon { border-color: #004030; color: #004030; }
+.type-chip--rss      { border-color: var(--black); color: var(--black); opacity: 0.5; }
+
+.lang-chip--emphasize { background: var(--black); color: var(--yellow); }
+.lang-chip--suppress  { background: var(--muted); color: var(--yellow); }
+
+/* ── Media thumbnail ───────────────────────────────────────── */
+
+.card-media {
+  position: relative;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 320px;
+  border: 1.5px solid rgba(0,0,0,0.15);
+}
+
+.card-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.card-media-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: #fff;
+  background: rgba(0,0,0,0.28);
+  pointer-events: none;
+}
+
+/* ── Triage button variants ────────────────────────────────── */
+
+.btn-flag {
+  border-color: #7A5000;
+  color: #7A5000;
+}
+.btn-flag:hover {
+  background: #7A5000;
+  color: var(--yellow);
+}
+
+.btn-read {
+  border-color: #3A6030;
+  color: #3A6030;
+}
+.btn-read:hover {
+  background: #3A6030;
+  color: #fff;
+}
+
+/* ── River markers ─────────────────────────────────────────── */
+
+.river-marker,
+.river-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  opacity: 0.5;
+}
+
+.river-marker-line,
+.river-end-line {
+  flex: 1;
+  height: 1px;
+  background: var(--black);
+}
+
+.river-marker-label,
+.river-end-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Keyword highlight ─────────────────────────────────────── */
+
+mark.kw-emphasis {
+  background: rgba(242,194,0,0.55);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* ── Suppressed item state ─────────────────────────────────── */
+
+.card--suppressed {
+  display: none;
+}
+
+.suppressed-notice {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 0;
+  text-decoration: underline;
+  display: block;
+}
+.suppressed-notice:hover { color: var(--black); }
+
+/* ── Keyboard focus ring on cards ──────────────────────────── */
+
+.card:focus {
+  outline: 2px solid var(--black);
+  outline-offset: 2px;
+}
+
+.card.card-focused {
+  outline: 2px solid var(--black);
+  outline-offset: 2px;
 }

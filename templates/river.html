@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% macro render_card(a) %}
+<article class="card card--{{ a.content_type or 'article' }}" id="card-{{ a.id }}"
+         data-id="{{ a.id }}"
+         tabindex="0">
+  <div class="card-header">
+    <span class="type-chip type-chip--{{ a.content_type or 'article' }}">{{ (a.content_type or 'article') | upper }}</span>
+    <span class="lang-chip">{{ (a.language or 'en') | upper }}</span>
+    {% if a.url %}
+      <a class="card-title" href="{{ a.url }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+    {% else %}
+      <span class="card-title">{{ a.title }}</span>
+    {% endif %}
+    <span class="card-date">{{ a.date_published[:7] if a.date_published else '' }}</span>
+  </div>
+
+  <div class="card-meta">
+    {{ a.authors or '—' }}{% if a.journal %} · <em>{{ a.journal }}</em>{% endif %}
+  </div>
+
+  {% if a.thumbnail_url and a.content_type in ('video', 'image') %}
+  <div class="card-media">
+    <img class="card-thumb" src="{{ a.thumbnail_url }}" alt="" loading="lazy">
+    {% if a.content_type == 'video' %}
+    <div class="card-media-play">▶</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if a.abstract %}
+  <div class="card-abstract">{{ a.abstract[:300] }}{% if a.abstract | length > 300 %}…{% endif %}</div>
+  {% endif %}
+
+  <div class="card-actions">
+    <button class="btn btn-flag" title="Flagged — read, important (F)"
+      hx-post="/action/{{ a.id }}/flag"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">★ Flag</button>
+
+    <button class="btn" title="Interesting — might read (I)"
+      hx-post="/action/{{ a.id }}/interesting"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">Interesting</button>
+
+    <button class="btn btn-read" title="Mark read (R)"
+      hx-post="/action/{{ a.id }}/read"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">✓ Read</button>
+
+    <button class="btn btn-delete" title="Delete"
+      hx-post="/action/{{ a.id }}/delete"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">✕</button>
+  </div>
+</article>
+{% endmacro %}
+
+<div class="view-header">
+  <h2 class="view-title">River</h2>
+  {% if items %}
+  <span class="view-meta">{{ items | length }} unread</span>
+  {% endif %}
+</div>
+
+{% set new_items  = items | selectattr("is_new", "equalto", 1) | list %}
+{% set seen_items = items | selectattr("is_new", "equalto", 0) | list %}
+
+<div class="article-list" id="article-list"
+     data-emphasize="{{ keywords | selectattr('mode','equalto','emphasize') | map(attribute='keyword') | join(',') }}"
+     data-suppress="{{ keywords | selectattr('mode','equalto','suppress') | map(attribute='keyword') | join(',') }}">
+
+  {% if not items %}
+  <div class="empty-state">
+    {% if fetch_running %}
+      <p>Fetching — check back in a moment.</p>
+    {% else %}
+      <p>Nothing here. Add sources in Settings or hit Fetch Now.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% for a in new_items %}
+  {{ render_card(a) }}
+  {% endfor %}
+
+  {% if seen_items and last_opened %}
+  <div class="river-marker">
+    <div class="river-marker-line"></div>
+    <span class="river-marker-label">Last opened {{ last_opened[:16] }}</span>
+    <div class="river-marker-line"></div>
+  </div>
+  {% endif %}
+
+  {% for a in seen_items %}
+  {{ render_card(a) }}
+  {% endfor %}
+
+  {% if items %}
+  <div class="river-end">
+    <div class="river-end-line"></div>
+    <span class="river-end-label">End of river</span>
+    <div class="river-end-line"></div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
