@@ -70,6 +70,18 @@
       </a>
     </nav>
 
+    {% if ui_theme == 'fui' %}
+    <div class="fui-dossier">
+      <div class="fui-dossier-hdr">// SUBJECT FILE</div>
+      <div class="fui-dossier-img"></div>
+      <div class="fui-dossier-data">
+        <span class="fui-dossier-row"><span class="fui-dk">SCAN</span><span class="fui-dv">THORACIC.X77</span></span>
+        <span class="fui-dossier-row"><span class="fui-dk">IDENT</span><span class="fui-dv">SUBJ-∅∅1</span></span>
+        <span class="fui-dossier-row"><span class="fui-dk">CLR</span><span class="fui-dv fui-dv--dim">CLASSIFIED</span></span>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="sidebar-bottom">
       <button class="fetch-btn" id="fetch-btn" onclick="triggerFetch()">
         {% if fetch_running %}Fetching…{% else %}Fetch Now{% endif %}
