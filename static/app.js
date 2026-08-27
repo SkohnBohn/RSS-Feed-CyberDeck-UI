@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isFui) {
     setupFuiKeyboard(isRiver);
     startDossierDegradation();
+    startNodeActivity();
+    startSessionDecay();
   }
 
   if (isFui && isRiver) {
@@ -260,19 +262,20 @@ function setupFuiPanel() {
 // ── Live clock + session uptime ───────────────────────────────────────────────
 function startFuiClock() {
   const clockEl  = document.getElementById('fui-clock');
-  const uptimeEl = document.getElementById('fui-uptime');
-  if (!clockEl && !uptimeEl) return;
+  const daysEl   = document.getElementById('fui-up-days');
+  const hmsEl    = document.getElementById('fui-up-hms');
+  if (!clockEl && !daysEl) return;
   const t0 = Date.now();
   function tick() {
     const now = new Date();
     if (clockEl) clockEl.textContent = now.toTimeString().slice(0, 8);
-    if (uptimeEl) {
-      const s   = Math.floor((Date.now() - t0) / 1000);
-      const hh  = String(Math.floor(s / 3600)).padStart(2, '0');
-      const mm  = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-      const ss  = String(s % 60).padStart(2, '0');
-      uptimeEl.textContent = `${hh}:${mm}:${ss}`;
-    }
+    const s   = Math.floor((Date.now() - t0) / 1000);
+    const dd  = String(Math.floor(s / 86400)).padStart(3, '0');
+    const hh  = String(Math.floor((s % 86400) / 3600)).padStart(2, '0');
+    const mm  = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss  = String(s % 60).padStart(2, '0');
+    if (daysEl) daysEl.textContent = dd;
+    if (hmsEl)  hmsEl.textContent  = `${hh}:${mm}:${ss}`;
   }
   tick();
   setInterval(tick, 1000);
@@ -293,24 +296,24 @@ function startRecvCounter() {
 
 // ── System log ────────────────────────────────────────────────────────────────
 const _syslogMessages = [
-  'NODE_07 HEARTBEAT / OK',
-  'PKT_RECV 0xAF31 / ACK',
-  'AUTH_TOKEN / REFRESH:OK',
-  'BUF_FLUSH / COMPLETE',
-  'CRC_CHECK / VERIFIED',
-  'INDEX_REBUILD / DONE',
-  'CONN_TIMEOUT / RETRY:1/3',
-  'CONN_RESTORE / STABLE',
-  'CACHE_HIT / RATIO:94%',
-  'SYNC_PULSE / NOMINAL',
-  'COMPRESS / RATIO:3.2:1',
-  'THREAD_POOL / NOMINAL',
-  'HEAP_ALLOC / OK',
-  'RECV 0xA21E / DECRYPT:OK',
-  'UPLINK / SIG:+82%',
+  'NODE_07 SYNC / CRC:OK',
+  'NODE_11 HEARTBEAT / ACK',
+  'ARCHIVE SCAN / FILES:0031',
+  'NET_RECV 0xAF31 / PKT:OK',
+  'MEM SWEEP / FREED:04C8',
+  'PROC_01 HEARTBEAT / T:14:22:31',
+  'NODE_19 UPLINK / SIG:+82%',
   'SECTOR_SCAN / COMPLETE',
-  'PKT_LOSS / RATE:0.00%',
-  'NODE_AUTH / STATUS:OK',
+  'BUF_FLUSH / NOMINAL',
+  'NODE_14 IDLE / STANDBY',
+  'CRC_CHECK / DELTA:0.001',
+  'HEAP_ALLOC / OK',
+  'INDEX_REBUILD / DONE',
+  'NODE_07 PKT_RECV / ACK',
+  'UPLINK STABLE / T:+047d',
+  'AUTH_TOKEN / REFRESH:OK',
+  'COMPRESS / RATIO:3.2:1',
+  'NODE_11 SYNC / COMPLETE',
 ];
 
 function startSyslog() {
@@ -782,6 +785,30 @@ function startSysMetrics() {
   // Initial draw with zeros, then start polling
   renderCanvas();
   setTimeout(poll, 300);
+}
+
+// ── Node status cycling ───────────────────────────────────────────────────────
+function startNodeActivity() {
+  const nodeEls = document.querySelectorAll('.fui-node-line[data-node]');
+  if (!nodeEls.length) return;
+  nodeEls.forEach(lineEl => {
+    const stEl = lineEl.querySelector('.fui-nst');
+    if (!stEl) return;
+    function cycle() {
+      const states = ['ACTIVE', 'SYNC', 'IDLE'];
+      const next   = states[Math.floor(Math.random() * states.length)];
+      stEl.textContent = next;
+      stEl.className   = 'fui-nst'
+        + (next === 'IDLE' ? ' fui-nst-dim' : next === 'SYNC' ? ' fui-nst-sync' : '');
+      setTimeout(cycle, 8000 + Math.random() * 22000);
+    }
+    setTimeout(cycle, Math.random() * 8000);
+  });
+}
+
+// ── Session decay: marks body after 30 min for CSS-driven index fatigue ────────
+function startSessionDecay() {
+  setTimeout(() => { document.body.dataset.sessionLong = ''; }, 30 * 60 * 1000);
 }
 
 // ── Single-frame character noise on syslog ────────────────────────────────────

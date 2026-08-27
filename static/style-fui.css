@@ -1794,23 +1794,33 @@
 /* ── Clock / uptime in sidebar-top ──────────────────────────────────────── */
 
 [data-theme="fui"] .fui-sys-time {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  margin-top:  8px;
-  font-family: var(--pfont);
-  font-size:   8px;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  margin-top:     8px;
+  font-family:    var(--pfont);
+  font-size:      8px;
   letter-spacing: 0.1em;
 }
 [data-theme="fui"] .fui-sys-time-pair {
   display:     flex;
   gap:         5px;
-  align-items: center;
+  align-items: baseline;
 }
 [data-theme="fui"] .fui-stk        { color: var(--p4); text-transform: uppercase; }
 [data-theme="fui"] .fui-stk::after { content: ':'; }
 [data-theme="fui"] .fui-stv        { color: var(--p2); font-family: var(--pdisplay); font-size: 22px; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; line-height: 1; }
-[data-theme="fui"] .fui-sys-time-sep { color: var(--p5); }
+[data-theme="fui"] .fui-sys-time-sep { display: none; }
+[data-theme="fui"] .fui-up-days {
+  color:          var(--p4);
+  font-family:    var(--pdisplay);
+  font-size:      16px;
+  letter-spacing: 0.04em;
+}
+[data-theme="fui"] .fui-up-sep {
+  color:     var(--p5);
+  font-size: 16px;
+}
 
 /* ── Verify flash state ──────────────────────────────────────────────────── */
 
@@ -1827,6 +1837,58 @@
 [data-theme="fui"] .fui-detail-verify::after  { content: ' ]'; }
 [data-theme="fui"] .fui-detail-verify.fui-verify-ok { color: var(--p2); }
 
+/* ── Node status panel ───────────────────────────────────────────────────── */
+
+[data-theme="fui"] .fui-node-status {
+  flex-shrink:  0;
+  border-top:   1px solid var(--p5);
+  padding:      5px 14px 6px;
+  overflow:     hidden;
+}
+[data-theme="fui"] .fui-node-status-hdr {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.2em;
+  color:          var(--p5);
+  margin-bottom:  4px;
+  text-transform: uppercase;
+}
+[data-theme="fui"] .fui-node-lines {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+[data-theme="fui"] .fui-node-line {
+  font-family:    var(--pfont);
+  font-size:      8px;
+  letter-spacing: 0.08em;
+  color:          var(--p4);
+  display:        flex;
+  justify-content: space-between;
+  white-space:    nowrap;
+}
+[data-theme="fui"] .fui-nst          { color: var(--p2); }
+[data-theme="fui"] .fui-nst-sync     { color: var(--p3); animation: blink 1.8s step-end infinite; }
+[data-theme="fui"] .fui-nst-dim      { color: var(--p5); }
+
+/* ── Session-long index decay (body[data-session-long] set after 30 min) ──── */
+
+[data-theme="fui"] body[data-session-long] .fui-index-panel {
+  opacity: 0.95;
+}
+[data-theme="fui"] body[data-session-long] .fui-index-panel::before {
+  content:        '';
+  position:       absolute;
+  inset:          0;
+  pointer-events: none;
+  z-index:        2;
+  background:     repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 3px,
+    rgba(180,184,255,0.05) 3px, rgba(180,184,255,0.05) 4px
+  );
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 /* CPU canvas (startSysMetrics) is data — JS respects this flag and stops
    glitch effects but keeps the live graph. All CSS flicker/sweep stops. */
@@ -1834,10 +1896,16 @@
   [data-theme="fui"] body                            { animation: none; }
   [data-theme="fui"] .fui-scan-beam                  { animation: none; opacity: 0; }
   [data-theme="fui"] .fui-ticker-inner               { animation: none; }
+  [data-theme="fui"] .fui-ticker-track               { animation: none; }
   [data-theme="fui"] .fui-row-glitch                 { animation: none; }
   [data-theme="fui"] .fui-dossier-overlay.dossier-spike { animation: none; }
   [data-theme="fui"] .fui-dossier-img                { transition: none; }
   [data-theme="fui"] .app-status-dot::after          { animation: none; opacity: 0; }
   [data-theme="fui"] .fui-aux-bar                    { animation: none; opacity: 0.5; }
+  [data-theme="fui"] .fui-nst-sync                   { animation: none; }
+  [data-theme="fui"] .fui-index-panel                { animation: none; }
+  [data-theme="fui"] .fui-detail-scroll              { animation: none; }
+  [data-theme="fui"] .fui-index-list                 { animation: none; }
+  [data-theme="fui"] .sidebar                        { animation: none; }
   [data-theme="fui"] *                               { transition-duration: 0.01ms !important; }
 }
