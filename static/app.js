@@ -107,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startPhaseVector();
     startAuxPkt();
     startPeriodicChecksum();
+    startAuxNoise();
   } else if (!isFui) {
     applyKeywordFilters();
     setupKeyboardTriage();
@@ -338,6 +339,12 @@ function startSyslog() {
 }
 
 function _fuiSelectRow(row) {
+  // Ghost afterglow on the previously active row
+  if (_fuiActive && _fuiActive !== row) {
+    const prev = _fuiActive;
+    prev.classList.add('fui-row-ghost');
+    setTimeout(() => prev.classList.remove('fui-row-ghost'), 800);
+  }
   document.querySelectorAll('.fui-index-row').forEach(r => r.classList.remove('fui-row-active'));
   row.classList.add('fui-row-active');
   _fuiActive = row;
@@ -560,6 +567,14 @@ function startGlitchEffects() {
       r.classList.add('fui-row-glitch');
       setTimeout(() => r.classList.remove('fui-row-glitch'), 130);
     }
+    // 1-in-8 chance: brief overexposure on the detail panel
+    if (Math.random() < 0.125) {
+      const detail = document.querySelector('.fui-detail-scroll');
+      if (detail) {
+        detail.style.filter = 'brightness(1.4) contrast(0.9)';
+        setTimeout(() => { detail.style.filter = ''; }, 80);
+      }
+    }
     // Prime numbers prevent lockstep with flicker (7s) and scanBeam (5.3s)
     setTimeout(doGlitch, 4700 + Math.random() * 8300);
   }
@@ -767,6 +782,22 @@ function startSysMetrics() {
   // Initial draw with zeros, then start polling
   renderCanvas();
   setTimeout(poll, 300);
+}
+
+// ── Single-frame character noise on syslog ────────────────────────────────────
+function startAuxNoise() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function spark() {
+    const lines = [...container.querySelectorAll('.fui-syslog-line:not(.fui-sl-kbd)')];
+    if (lines.length) {
+      const target = lines[Math.floor(Math.random() * lines.length)];
+      target.classList.add('fui-noise-line');
+      setTimeout(() => target.classList.remove('fui-noise-line'), 200);
+    }
+    setTimeout(spark, 45000 + Math.random() * 45000);
+  }
+  setTimeout(spark, 45000 + Math.random() * 45000);
 }
 
 // ── Phase vector drift ────────────────────────────────────────────────────────

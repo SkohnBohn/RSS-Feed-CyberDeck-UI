@@ -67,6 +67,20 @@
   0%, 100% { opacity: 0.45; transform: scaleX(1); }
   50%       { opacity: 1;    transform: scaleX(0.82); }
 }
+@keyframes indexInterference {
+  0%, 97%, 97.5%, 98%, 100% { transform: translateX(0); }
+  97.3%  { transform: translateX(1px); }
+  97.7%  { transform: translateX(-1px); }
+}
+@keyframes titleBloom {
+  0%, 100% { text-shadow: 0 0 8px rgba(180,184,255,0.35); }
+  50%      { text-shadow: 0 0 18px rgba(180,184,255,0.75), 0 0 36px rgba(180,184,255,0.2); }
+}
+@keyframes tickerJitter {
+  0%, 96%, 100% { transform: translateY(0);   }
+  97%            { transform: translateY(1px); }
+  98%            { transform: translateY(0);   }
+}
 
 /* ── Token palette ───────────────────────────────────────────────────────── */
 [data-theme="fui"] {
@@ -87,7 +101,6 @@
   background:  var(--p7);
   color:       var(--p1);
   font-family: var(--pfont);
-  animation:   flicker 7s infinite;
   height:      100vh;
   overflow:    hidden;
   display:     flex;
@@ -149,6 +162,7 @@
   display:   flex;
   flex-direction: column;
   overflow:  hidden;
+  animation: flicker 6.7s infinite;
 }
 
 /* Corner brackets on sidebar */
@@ -401,6 +415,7 @@
   overflow:     hidden;
   position:     relative;
   isolation:    isolate;
+  animation:    indexInterference 23s infinite;
   /* pixel-dot grain texture */
   background-image: radial-gradient(circle, rgba(180,184,255,0.04) 1px, transparent 1px);
   background-size: 3px 3px;
@@ -589,6 +604,7 @@
   flex:       1;
   overflow-y: auto;
   padding:    4px 0;
+  animation:  flicker 7.3s infinite;
 }
 
 [data-theme="fui"] .fui-index-list::-webkit-scrollbar       { width: 3px; }
@@ -640,6 +656,15 @@
 }
 [data-theme="fui"] .fui-index-row.fui-row-glitch {
   animation: rowGlitch 0.12s steps(1) forwards;
+}
+[data-theme="fui"] .fui-index-row.fui-row-ghost {
+  box-shadow: inset 0 0 20px rgba(180,184,255,0.04);
+  transition: box-shadow 0.8s ease;
+}
+[data-theme="fui"] .fui-noise-line {
+  letter-spacing: -0.3em;
+  opacity:        0.3;
+  transition:     none !important;
 }
 
 [data-theme="fui"] .fui-row-lead {
@@ -741,6 +766,7 @@
   padding:    24px 30px;
   position:   relative;
   isolation:  isolate;
+  animation:  flicker 7s infinite;
   /* grain texture */
   background-image: radial-gradient(circle, rgba(180,184,255,0.025) 1px, transparent 1px);
   background-size: 4px 4px;
@@ -827,7 +853,7 @@
   line-height:    1.4;
   margin-bottom:  10px;
   text-shadow:    0 0 8px rgba(180,184,255,0.35);
-  animation:      typeIn 0.35s steps(25), rgbShift 0.5s steps(6) 0.35s;
+  animation:      typeIn 0.35s steps(25), rgbShift 0.5s steps(6) 0.35s, titleBloom 4.1s ease-in-out 0.85s infinite;
 }
 [data-theme="fui"] .fui-detail-title a {
   color: inherit;
@@ -1739,7 +1765,7 @@
 }
 [data-theme="fui"] .fui-syslog-line::before { content: '> '; color: var(--p5); }
 [data-theme="fui"] .fui-sl-dim    { color: var(--p5); opacity: 0.6; }
-[data-theme="fui"] .fui-sl-bright { color: var(--p2); }
+[data-theme="fui"] .fui-sl-bright { color: var(--p2); text-shadow: 1px 0 rgba(180,184,255,0.15); }
 [data-theme="fui"] .fui-sl-kbd   { color: var(--p4); opacity: 1; letter-spacing: 0.14em; }
 
 /* ── Ticker strip (sidebar) ──────────────────────────────────────────────── */
@@ -1753,6 +1779,7 @@
 [data-theme="fui"] .fui-ticker-track {
   overflow:    hidden;
   white-space: nowrap;
+  animation:   tickerJitter 7.7s linear infinite;
 }
 [data-theme="fui"] .fui-ticker-inner {
   display:        inline-block;
