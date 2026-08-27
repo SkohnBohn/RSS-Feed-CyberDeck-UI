@@ -539,6 +539,7 @@
 
 [data-theme="fui"] .fui-detail-scroll {
   flex:       1;
+  min-height: 0;
   overflow-y: auto;
   padding:    24px 30px;
   position:   relative;
