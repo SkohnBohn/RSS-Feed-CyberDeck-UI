@@ -416,21 +416,6 @@
   letter-spacing: 0.12em;
 }
 
-/* ── Panel keyboard-focus indicator ─────────────────────────────────────── */
-[data-theme="fui"] .fui-panel-focused > .fui-panel-hdr {
-  color:             var(--p0);
-  border-bottom-color: var(--p1);
-  background:        rgba(180,184,255,0.04);
-}
-[data-theme="fui"] .fui-panel-focused > .fui-panel-hdr::before,
-[data-theme="fui"] .fui-panel-focused > .fui-panel-hdr::after {
-  border-color: var(--p1);
-  background:   var(--p5);
-}
-/* Left-edge accent bar on focused panel */
-[data-theme="fui"] .fui-panel-focused {
-  box-shadow: inset 2px 0 0 var(--p2);
-}
 
 /* ── Index list ──────────────────────────────────────────────────────────── */
 
