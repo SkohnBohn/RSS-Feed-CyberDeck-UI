@@ -2,6 +2,7 @@
 Desktop entry point — opens the dashboard in a native app window.
 Run with:  python3 main.py
 """
+import platform
 import socket
 import threading
 import time
@@ -35,12 +36,13 @@ if __name__ == "__main__":
         print("Error: Flask did not start within 15 seconds.")
         raise SystemExit(1)
 
+    kwargs = {"easy_drag": False} if platform.system() == "Darwin" else {}
     window = webview.create_window(
         title="Surrealism Papers Dashboard",
         url="http://127.0.0.1:5000",
         width=1280,
         height=820,
         min_size=(900, 600),
-        easy_drag=False,
+        **kwargs,
     )
     webview.start()
