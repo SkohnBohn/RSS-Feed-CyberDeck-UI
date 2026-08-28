@@ -139,9 +139,13 @@ def view(section):
     articles = db.get_articles(status=status, collection_id=col_id)
     keywords = db.get_keyword_filters()
     ctx      = _base_ctx()
+    _safe_keys = ("id","title","authors","journal","date_published","abstract",
+                  "url","language","source","content_type","doi")
+    articles_json = json.dumps([{k: a.get(k) for k in _safe_keys} for a in articles])
     return render_template(
         "inbox.html",
         articles=articles,
+        articles_json=articles_json,
         section=section,
         label=label,
         active_collection=col_id,

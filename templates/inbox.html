@@ -2,27 +2,160 @@
 {% block content %}
 
 {% if ui_theme == 'fui' %}
-<div class="fui-view-hdr">
-  <div class="fui-view-hdr-top">
-    <span class="fui-view-hdr-label">
-      {%- if section == 'flagged' %}// QUEUE_01 / FLAG
-      {%- elif section == 'interesting' %}// QUEUE_02 / INT
-      {%- elif section == 'read' %}// ARCHIVE / LOG
-      {%- else %}// RECORD_QUEUE{%- endif %}
-    </span>
-    <span class="fui-view-hdr-count">BUF:{{ '%04d' % articles|length }}</span>
-  </div>
-  <div class="fui-view-hdr-strip">
-    NODE_07 ·· AUTH:PASS ·· STATUS:NOMINAL ·· RECORDS:{{ articles|length }} ·· CRC:{{ '%04X' % (articles|length * 137 + 0x4A2F) }}
-  </div>
-</div>
+
+{# ── FUI diagnostic split-panel layout (shared with river) ──────────────── #}
+
+<div class="fui-river-wrapper">
+
+  {# ── Left: compact index panel ─────────────────────────────────────────── #}
+  <div class="fui-index-panel">
+    <div class="fui-panel-hdr">
+      <span>
+        {%- if section == 'flagged' %}// QUEUE_01 / FLAG
+        {%- elif section == 'interesting' %}// QUEUE_02 / INT
+        {%- elif section == 'read' %}// ARCHIVE / LOG
+        {%- else %}// RECORD_QUEUE{%- endif %}
+      </span>
+      <span class="fui-recv-badge" id="fui-recv-count">RCV:0x0000</span>
+      <span class="fui-panel-hdr-id">BUF:{{ '%04d' % articles|length }} / OK</span>
+    </div>
+
+    <div class="fui-index-list" id="fui-index-list">
+
+      {% if not articles %}
+      <div class="fui-detail-empty" style="padding:40px 14px;text-align:left">
+        {% if fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+      </div>
+      {% endif %}
+
+      {% for a in articles %}
+      <div class="fui-index-row {% if loop.first %}fui-row-active{% endif %}"
+           data-id="{{ a.id }}" data-idx="{{ loop.index0 }}" tabindex="0">
+        <div class="fui-row-lead">
+          <span class="fui-row-id">{{ '%04X' % a.id }}</span>
+          <span class="fui-row-status
+            {%- if section == 'flagged' %} fui-status-flag
+            {%- elif section == 'read' %} fui-status-read
+            {%- else %} fui-status-new{%- endif %}">
+            {%- if section == 'flagged' %}★
+            {%- elif section == 'interesting' %}◈
+            {%- elif section == 'read' %}✓
+            {%- else %}●{%- endif %}
+          </span>
+        </div>
+        <div class="fui-row-body">
+          <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
+          <div class="fui-row-sub">SRC_{{ (a.source or 'UNKN')[:6]|upper }}  /  L:{{ (a.language or 'en')|upper }}  /  TS:{{ a.date_published[:7] if a.date_published else '????.??' }}  /  UID:{{ '%04X' % a.id }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>{# /fui-index-list #}
+    <div class="fui-scan-beam" aria-hidden="true"></div>
+  </div>{# /fui-index-panel #}
+
+  {# ── Right: detail panel ───────────────────────────────────────────────── #}
+  <div class="fui-detail-panel">
+    <div class="fui-panel-hdr fui-detail-hdr">
+      <div class="fui-detail-hdr-top">
+        <span>
+          {%- if section == 'flagged' %}// QUEUE_01 / RECORD_DETAIL
+          {%- elif section == 'interesting' %}// QUEUE_02 / RECORD_DETAIL
+          {%- elif section == 'read' %}// ARCHIVE / RECORD_DETAIL
+          {%- else %}// RECORD_DETAIL{%- endif %}
+        </span>
+        <span class="fui-panel-hdr-id" id="fui-detail-id">[ AWAIT_SEL ]</span>
+      </div>
+      <div class="fui-detail-hdr-strip" id="fui-detail-hdr-strip">
+        UID_00000000 ·· CRC:0x000000 ·· RECV:OK ·· T:00.000ms ·· NODE_07 ·· AUTH:PASS
+      </div>
+    </div>
+
+    <div class="fui-detail-body-row">
+      <div class="fui-detail-scroll" id="fui-detail-scroll">
+        <div class="fui-detail-empty" id="fui-detail-content">
+          {% if articles %}AWAIT_SEL // SELECT FROM INDEX{% elif fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+        </div>
+      </div>
+
+      <div class="fui-aux-column">
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">CLASS</div>
+          <div class="fui-aux-value">B</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">REV</div>
+          <div class="fui-aux-value" id="fui-aux-rev">--</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">SECTOR</div>
+          <div class="fui-aux-value" id="fui-aux-sector">--</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">STATE</div>
+          <div class="fui-aux-value" id="fui-aux-state">RDY</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">PKT</div>
+          <div class="fui-aux-value" id="fui-aux-pkt">0000</div>
+        </div>
+        <div class="fui-aux-phase">
+          <div class="fui-aux-label">PHASE</div>
+          <div class="fui-aux-phase-val">Ω 0.381</div>
+        </div>
+        <div class="fui-aux-vbars" aria-hidden="true">
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+        </div>
+      </div>
+    </div>{# /fui-detail-body-row #}
+
+    {# Triage action strip — replaces instruments strip on queue pages #}
+    <div class="fui-action-strip" id="fui-action-strip" data-section="{{ section }}">
+      <div class="fui-action-strip-hdr">// TRIAGE_OPS / RECORD ·· KBD: F / I / R / U / DEL</div>
+      <div class="fui-action-strip-btns">
+        {% if section != 'flagged' %}
+        <button class="fui-act-btn fui-act-flag" data-action="flag" disabled>[F] FLAG</button>
+        {% endif %}
+        {% if section != 'interesting' %}
+        <button class="fui-act-btn fui-act-int" data-action="interesting" disabled>[I] QUEUE</button>
+        {% endif %}
+        {% if section != 'read' %}
+        <button class="fui-act-btn fui-act-read" data-action="read" disabled>[R] ARCHIVE</button>
+        {% endif %}
+        <button class="fui-act-btn fui-act-restore" data-action="unread" disabled>[U] ← RIVER</button>
+        <button class="fui-act-btn fui-act-del" data-action="delete" disabled>[DEL] PURGE</button>
+      </div>
+    </div>
+
+    <div class="fui-syslog">
+      <div class="fui-syslog-hdr">// SYSLOG / PROC_01</div>
+      <div class="fui-syslog-lines" id="fui-syslog-lines">
+        <div class="fui-syslog-line fui-sl-dim">BOOT_SEQ_04 / COMPLETE</div>
+        <div class="fui-syslog-line fui-sl-dim">AUTH_MOD / STATUS:OK</div>
+        <div class="fui-syslog-line">AWAIT_INPUT // OP_01</div>
+        <div class="fui-syslog-line fui-sl-dim fui-sl-kbd" id="fui-kbd-hint">── SEL TO ACT</div>
+      </div>
+    </div>
+
+  </div>{# /fui-detail-panel #}
+</div>{# /fui-river-wrapper #}
+
+{# Embed article data for JS — same pattern as river #}
+<script id="fui-data" type="application/json" data-section="{{ section }}">{{ articles_json | safe }}</script>
 
 {% else %}
+
+{# ── Classic card-list layout ────────────────────────────────────────────── #}
+
 <div class="view-header">
   <h2 class="view-title">{{ label }}</h2>
   <span class="view-meta">{{ articles | length }} item{% if articles | length != 1 %}s{% endif %}</span>
 </div>
-{% endif %}
 
 <div class="article-list" id="article-list"
      data-emphasize="{{ keywords | selectattr('mode','equalto','emphasize') | map(attribute='keyword') | join(',') }}"
@@ -31,9 +164,9 @@
   {% if not articles %}
   <div class="empty-state">
     {% if fetch_running %}
-      {% if ui_theme == 'fui' %}<p>SYNC_ACTIVE / STANDBY</p>{% else %}<p>Fetching — check back in a moment.</p>{% endif %}
+      <p>Fetching — check back in a moment.</p>
     {% else %}
-      {% if ui_theme == 'fui' %}<p>BUF_EMPTY / 0x0000</p>{% else %}<p>Nothing here.</p>{% endif %}
+      <p>Nothing here.</p>
     {% endif %}
   </div>
   {% endif %}
@@ -75,38 +208,40 @@
       <button class="btn btn-flag" title="Flag (F)"
         hx-post="/action/{{ a.id }}/flag"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[F] FLAG{% else %}★ Flag{% endif %}</button>
+        hx-swap="outerHTML swap:150ms">★ Flag</button>
       {% endif %}
 
       {% if section != 'interesting' %}
       <button class="btn" title="Queue as interesting (I)"
         hx-post="/action/{{ a.id }}/interesting"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[I] QUEUE{% else %}Interesting{% endif %}</button>
+        hx-swap="outerHTML swap:150ms">Interesting</button>
       {% endif %}
 
       {% if section != 'read' %}
       <button class="btn btn-read" title="Archive / mark read (R)"
         hx-post="/action/{{ a.id }}/read"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[R] ARCHIVE{% else %}✓ Read{% endif %}</button>
+        hx-swap="outerHTML swap:150ms">✓ Read</button>
       {% endif %}
 
       {% if section != 'river' %}
       <button class="btn btn-ghost"
         hx-post="/action/{{ a.id }}/unread"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}RESTORE ──{% else %}← River{% endif %}</button>
+        hx-swap="outerHTML swap:150ms">← River</button>
       {% endif %}
 
       <button class="btn btn-delete" title="Delete"
         hx-post="/action/{{ a.id }}/delete"
         hx-target="#card-{{ a.id }}"
-        hx-swap="outerHTML swap:150ms">{% if ui_theme == 'fui' %}[DEL] PURGE{% else %}✕{% endif %}</button>
+        hx-swap="outerHTML swap:150ms">✕</button>
     </div>
   </article>
   {% endfor %}
 
 </div>
+
+{% endif %}
 
 {% endblock %}

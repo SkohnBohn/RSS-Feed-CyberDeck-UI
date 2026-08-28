@@ -2,43 +2,265 @@
 {% block content %}
 
 {% if ui_theme == 'fui' %}
-<div class="fui-view-hdr">
-  <div class="fui-view-hdr-top">
-    <span class="fui-view-hdr-label">// CFG / SYS</span>
-    <span class="fui-view-hdr-count">NODE_07</span>
+
+{# ── FUI two-column config terminal ─────────────────────────────────────── #}
+
+<div class="fui-settings-wrapper">
+
+  {# ── Left: subsystem index ──────────────────────────────────────────────── #}
+  <div class="fui-cfg-nav">
+    <div class="fui-cfg-nav-hdr">
+      <div class="fui-cfg-nav-hdr-top">// SYS_CONFIG</div>
+      <div class="fui-cfg-nav-hdr-sub">NODE_07 / CLASS:ADMIN</div>
+    </div>
+    <div class="fui-cfg-nav-list" id="fui-cfg-nav-list">
+      <div class="fui-cfg-nav-item" data-target="cfg-display" tabindex="0">
+        <div class="fui-cfg-nav-label">DISPLAY_MODE</div>
+        <div class="fui-cfg-nav-sub">SYS/RENDER</div>
+      </div>
+      <div class="fui-cfg-nav-item" data-target="cfg-col" tabindex="0">
+        <div class="fui-cfg-nav-label">COL_INDEX</div>
+        <div class="fui-cfg-nav-sub">SRC/GROUPS</div>
+      </div>
+      <div class="fui-cfg-nav-item" data-target="cfg-kw" tabindex="0">
+        <div class="fui-cfg-nav-label">KW_FILTER</div>
+        <div class="fui-cfg-nav-sub">SCAN/PROC</div>
+      </div>
+      <div class="fui-cfg-nav-item" data-target="cfg-src" tabindex="0">
+        <div class="fui-cfg-nav-label">SRC_REGISTRY</div>
+        <div class="fui-cfg-nav-sub">FEED/INGEST</div>
+      </div>
+      <div class="fui-cfg-nav-item" data-target="cfg-q" tabindex="0">
+        <div class="fui-cfg-nav-label">QUERY_VECTORS</div>
+        <div class="fui-cfg-nav-sub">API/SEARCH</div>
+      </div>
+    </div>
+    <div class="fui-cfg-nav-footer">
+      AUTH:PASS ·· WRITE_EN:TRUE
+    </div>
   </div>
-  <div class="fui-view-hdr-strip">
-    AUTH:PASS ·· CLASS:ADMIN ·· STATUS:NOMINAL ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0x4A2F }}
-  </div>
-</div>
+
+  {# ── Right: active config panel ─────────────────────────────────────────── #}
+  <div class="fui-cfg-content">
+
+    {% if saved %}
+    <div class="fui-cfg-banner">WRITE_OK / CFG:SAVED ·· CRC:{{ '%04X' % 0x4A2F }}</div>
+    {% endif %}
+
+    {# ── DISPLAY_MODE ─────────────────────────────────────────────────────── #}
+    <div class="fui-cfg-panel" id="cfg-display">
+      <div class="fui-panel-hdr fui-detail-hdr">
+        <div class="fui-detail-hdr-top">
+          <span>// DISPLAY_MODE / SYS_RENDER</span>
+          <span class="fui-panel-hdr-id">CFG:01 / 05</span>
+        </div>
+        <div class="fui-detail-hdr-strip">
+          AUTH:PASS ·· CLASS:ADMIN ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0xD201 }}
+        </div>
+      </div>
+      <div class="fui-cfg-body">
+        <p class="fui-cfg-note">
+          SELECT RENDER_ENGINE ·· CLASSIC=YELLOW_PHOSPHOR ·· FUI=LAVENDER_CRT / CYBERDECK_MODE
+        </p>
+        <form method="POST" action="/settings/theme" class="fui-cfg-form">
+          <div class="fui-cfg-field-row">
+            <span class="fui-cfg-field-label">RENDER_ENGINE</span>
+            <div class="fui-cfg-field-btns">
+              <button class="fui-cfg-btn {% if ui_theme != 'fui' %}fui-cfg-btn-active{% endif %}" type="submit" name="ui_theme" value="classic">CLASSIC ──</button>
+              <button class="fui-cfg-btn {% if ui_theme == 'fui' %}fui-cfg-btn-active{% endif %}" type="submit" name="ui_theme" value="fui">● FUI</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {# ── COL_INDEX ────────────────────────────────────────────────────────── #}
+    <div class="fui-cfg-panel" id="cfg-col">
+      <div class="fui-panel-hdr fui-detail-hdr">
+        <div class="fui-detail-hdr-top">
+          <span>// COL_INDEX / SRC_GROUPS</span>
+          <span class="fui-panel-hdr-id">CFG:02 / 05</span>
+        </div>
+        <div class="fui-detail-hdr-strip">
+          AUTH:PASS ·· PARTITIONS:{{ collections|length }} ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0xF102 }}
+        </div>
+      </div>
+      <div class="fui-cfg-body">
+        <p class="fui-cfg-note">
+          NAMED PARTITION GROUPS ·· BROWSE VIA NODE_STREAM SIDEBAR
+        </p>
+        <div class="feed-list" id="collection-list">
+          {% for col in collections %}
+          <div class="feed-row" id="col-{{ col.id }}">
+            <span class="feed-name">{{ col.name }}</span>
+            <button class="btn btn-delete" title="Remove"
+              hx-post="/settings/collections/{{ col.id }}/delete"
+              hx-target="#col-{{ col.id }}"
+              hx-swap="outerHTML swap:150ms">[DEL]</button>
+          </div>
+          {% else %}
+          <div class="fui-cfg-empty">BUF_EMPTY / NO_COLLECTIONS</div>
+          {% endfor %}
+        </div>
+        <form method="POST" action="/settings/collections/add" class="fui-cfg-add-form">
+          <input class="field-input" type="text" name="name" placeholder="COLLECTION_NAME" required>
+          <button class="btn" type="submit">REGISTER ──►</button>
+        </form>
+      </div>
+    </div>
+
+    {# ── KW_FILTER ────────────────────────────────────────────────────────── #}
+    <div class="fui-cfg-panel" id="cfg-kw">
+      <div class="fui-panel-hdr fui-detail-hdr">
+        <div class="fui-detail-hdr-top">
+          <span>// KW_FILTER / MATRIX</span>
+          <span class="fui-panel-hdr-id">CFG:03 / 05</span>
+        </div>
+        <div class="fui-detail-hdr-strip">
+          AUTH:PASS ·· FILTERS:{{ keyword_filters|length }} ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0xC803 }}
+        </div>
+      </div>
+      <div class="fui-cfg-body">
+        <p class="fui-cfg-note">
+          EMPHASIZE=HIGHLIGHT_MATCH IN TITLE+ABSTRACT ·· SUPPRESS=HIDE_MATCH / TOGGLE TO REVEAL
+        </p>
+        <div class="feed-list" id="keyword-list">
+          {% for kf in keyword_filters %}
+          <div class="feed-row" id="kf-{{ kf.id }}">
+            <span class="lang-chip lang-chip--{{ kf.mode }}">{{ kf.mode | upper }}</span>
+            <span class="feed-name">{{ kf.keyword }}</span>
+            <button class="btn btn-delete" title="Remove"
+              hx-post="/settings/keywords/{{ kf.id }}/delete"
+              hx-target="#kf-{{ kf.id }}"
+              hx-swap="outerHTML swap:150ms">[DEL]</button>
+          </div>
+          {% else %}
+          <div class="fui-cfg-empty">MATRIX_EMPTY / NO_FILTERS</div>
+          {% endfor %}
+        </div>
+        <form method="POST" action="/settings/keywords/add" class="fui-cfg-add-form">
+          <input class="field-input" type="text" name="keyword" placeholder="KEYWORD / PHRASE" required>
+          <select class="field-input field-select" name="mode">
+            <option value="emphasize">EMPHASIZE</option>
+            <option value="suppress">SUPPRESS</option>
+          </select>
+          <button class="btn" type="submit">ADD ──►</button>
+        </form>
+      </div>
+    </div>
+
+    {# ── SRC_REGISTRY ─────────────────────────────────────────────────────── #}
+    <div class="fui-cfg-panel" id="cfg-src">
+      <div class="fui-panel-hdr fui-detail-hdr">
+        <div class="fui-detail-hdr-top">
+          <span>// SRC_REGISTRY / FEED_INGEST</span>
+          <span class="fui-panel-hdr-id">CFG:04 / 05</span>
+        </div>
+        <div class="fui-detail-hdr-strip">
+          AUTH:PASS ·· SOURCES:{{ feeds|length }} ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0xB704 }}
+        </div>
+      </div>
+      <div class="fui-cfg-body">
+        <p class="fui-cfg-note">
+          RSS/ATOM · YT_CHANNEL (<code>youtube.com/feeds/videos.xml?channel_id=…</code>) · MASTODON (<code>mastodon.social/@user.rss</code>) ·· ALL_ITEMS_FETCHED / NO_FILTER
+        </p>
+        <div class="feed-list" id="feed-list">
+          {% for feed in feeds %}
+          <div class="feed-row" id="feed-{{ feed.id }}">
+            <span class="lang-chip">{{ feed.lang | upper }}</span>
+            <span class="type-chip type-chip--{{ feed.feed_type or 'rss' }}">{{ (feed.feed_type or 'rss') | upper }}</span>
+            <span class="feed-name">{{ feed.name }}</span>
+            <span class="feed-url">{{ feed.url }}</span>
+            <button class="btn btn-delete" title="Remove"
+              hx-post="/settings/feeds/{{ feed.id }}/delete"
+              hx-target="#feed-{{ feed.id }}"
+              hx-swap="outerHTML swap:150ms">[DEL]</button>
+          </div>
+          {% endfor %}
+        </div>
+        <form method="POST" action="/settings/feeds/add" class="fui-cfg-add-form fui-cfg-add-form--src">
+          <input class="field-input" type="text" name="name" placeholder="SRC_NAME" required>
+          <input class="field-input" type="url"  name="url"  placeholder="FEED_URL" required>
+          <select class="field-input field-select" name="feed_type">
+            <option value="rss">RSS</option>
+            <option value="youtube">YOUTUBE</option>
+            <option value="mastodon">MASTODON</option>
+          </select>
+          <select class="field-input field-select" name="lang">
+            <option value="en">EN</option>
+            <option value="de">DE</option>
+            <option value="fr">FR</option>
+            <option value="es">ES</option>
+          </select>
+          <select class="field-input field-select" name="collection_id">
+            <option value="">NO_COLLECTION</option>
+            {% for col in collections %}
+            <option value="{{ col.id }}">{{ col.name }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn" type="submit">REGISTER ──►</button>
+        </form>
+      </div>
+    </div>
+
+    {# ── QUERY_VECTORS ────────────────────────────────────────────────────── #}
+    <div class="fui-cfg-panel" id="cfg-q">
+      <div class="fui-panel-hdr fui-detail-hdr">
+        <div class="fui-detail-hdr-top">
+          <span>// QUERY_VECTORS / API_SEARCH</span>
+          <span class="fui-panel-hdr-id">CFG:05 / 05</span>
+        </div>
+        <div class="fui-detail-hdr-strip">
+          AUTH:PASS ·· ENGINE:OPENALEX+BASE ·· WRITE_EN:TRUE ·· CRC:{{ '%04X' % 0xA305 }}
+        </div>
+      </div>
+      <div class="fui-cfg-body">
+        <p class="fui-cfg-note">
+          OPENALEX=PLAIN_KW (OR SUPPORTED) ·· BASE=SOLR_WILDCARDS (<code>surrealis*</code> MATCHES ALL VARIANTS)
+        </p>
+        <form method="POST" action="/settings/queries" class="fui-cfg-form">
+          <div class="fui-cfg-field-row">
+            <span class="fui-cfg-field-label">OPENALEX / L:EN</span>
+            <input class="field-input fui-cfg-field-input" type="text" name="query_openalex_en"
+                   value="{{ settings.get('query_openalex_en', '') }}" placeholder="keyword terms …">
+          </div>
+          <div class="fui-cfg-field-row">
+            <span class="fui-cfg-field-label">OPENALEX / L:DE</span>
+            <input class="field-input fui-cfg-field-input" type="text" name="query_openalex_de"
+                   value="{{ settings.get('query_openalex_de', '') }}" placeholder="Suchbegriffe …">
+          </div>
+          <div class="fui-cfg-field-row">
+            <span class="fui-cfg-field-label">BASE / L:EN</span>
+            <input class="field-input fui-cfg-field-input" type="text" name="query_base_en"
+                   value="{{ settings.get('query_base_en', '') }}" placeholder="surrealis* …">
+          </div>
+          <div class="fui-cfg-field-row">
+            <span class="fui-cfg-field-label">BASE / L:DE</span>
+            <input class="field-input fui-cfg-field-input" type="text" name="query_base_de"
+                   value="{{ settings.get('query_base_de', '') }}" placeholder="Surrealismus* …">
+          </div>
+          <div class="fui-cfg-submit-row">
+            <button class="btn btn-save" type="submit">COMMIT ──►</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>{# /fui-cfg-content #}
+</div>{# /fui-settings-wrapper #}
+
 {% else %}
+
+{# ── Classic layout ──────────────────────────────────────────────────────── #}
+
 <div class="view-header">
   <h2 class="view-title">Settings</h2>
 </div>
-{% endif %}
 
 {% if saved %}
-  {% if ui_theme == 'fui' %}
-  <div class="fui-banner">WRITE_OK / CFG:SAVED</div>
-  {% else %}
-  <div class="banner">Saved.</div>
-  {% endif %}
+<div class="banner">Saved.</div>
 {% endif %}
 
-<!-- ── UI Theme ── -->
-{% if ui_theme == 'fui' %}
-<div class="fui-settings-section">
-  <div class="fui-settings-hdr">
-    // DISPLAY_MODE
-    <span class="fui-settings-hdr-tag">SYS/RENDER</span>
-  </div>
-  <p class="fui-settings-note">SELECT RENDER_ENGINE / CLASSIC=YELLOW_PHOSPHOR / FUI=LAVENDER_CRT</p>
-  <form method="POST" action="/settings/theme" class="theme-toggle-group">
-    <button class="theme-toggle-btn {% if ui_theme != 'fui' %}active{% endif %}" type="submit" name="ui_theme" value="classic">CLASSIC ──</button>
-    <button class="theme-toggle-btn {% if ui_theme == 'fui' %}active{% endif %}" type="submit" name="ui_theme" value="fui">[ACTIVE] FUI</button>
-  </form>
-</div>
-{% else %}
 <section class="settings-section">
   <h3 class="settings-heading">Interface Theme</h3>
   <p class="settings-note">Choose between the classic yellow-black interface or the FUI terminal aesthetic.</p>
@@ -47,41 +269,10 @@
     <button class="theme-toggle-btn {% if ui_theme == 'fui' %}active{% endif %}" type="submit" name="ui_theme" value="fui">FUI</button>
   </form>
 </section>
-{% endif %}
 
-<!-- ── Collections ── -->
-{% if ui_theme == 'fui' %}
-<div class="fui-settings-section">
-  <div class="fui-settings-hdr">
-    // COL_INDEX
-    <span class="fui-settings-hdr-tag">SRC/GROUPS</span>
-  </div>
-  <p class="fui-settings-note">NAMED PARTITION GROUPS / BROWSE VIA NODE_STREAM SIDEBAR</p>
-
-  <div class="feed-list" id="collection-list">
-    {% for col in collections %}
-    <div class="feed-row" id="col-{{ col.id }}">
-      <span class="feed-name">{{ col.name }}</span>
-      <button class="btn btn-delete" title="Remove"
-        hx-post="/settings/collections/{{ col.id }}/delete"
-        hx-target="#col-{{ col.id }}"
-        hx-swap="outerHTML swap:150ms">[DEL] PURGE</button>
-    </div>
-    {% else %}
-    <p class="fui-settings-note" style="margin:0">BUF_EMPTY / NO_COLLECTIONS</p>
-    {% endfor %}
-  </div>
-
-  <form method="POST" action="/settings/collections/add" class="add-feed-form" style="margin-top:12px">
-    <input class="field-input" type="text" name="name" placeholder="COLLECTION_NAME" required>
-    <button class="btn" type="submit">REGISTER ──►</button>
-  </form>
-</div>
-{% else %}
 <section class="settings-section">
   <h3 class="settings-heading">Collections</h3>
   <p class="settings-note">Group sources into named collections. Browse a collection via the sidebar.</p>
-
   <div class="feed-list" id="collection-list">
     {% for col in collections %}
     <div class="feed-row" id="col-{{ col.id }}">
@@ -95,55 +286,18 @@
     <p class="settings-note" style="margin:0">No collections yet.</p>
     {% endfor %}
   </div>
-
   <form method="POST" action="/settings/collections/add" class="add-feed-form" style="margin-top:12px">
     <input class="field-input" type="text" name="name" placeholder="Collection name" required>
     <button class="btn" type="submit">Add</button>
   </form>
 </section>
-{% endif %}
 
-<!-- ── Keyword Filters ── -->
-{% if ui_theme == 'fui' %}
-<div class="fui-settings-section">
-  <div class="fui-settings-hdr">
-    // KW_FILTER / MATRIX
-    <span class="fui-settings-hdr-tag">SCAN/PROC</span>
-  </div>
-  <p class="fui-settings-note">EMPHASIZE=HIGHLIGHT_MATCH IN TITLE+ABSTRACT / SUPPRESS=HIDE_MATCH / TOGGLE TO REVEAL</p>
-
-  <div class="feed-list" id="keyword-list">
-    {% for kf in keyword_filters %}
-    <div class="feed-row" id="kf-{{ kf.id }}">
-      <span class="lang-chip lang-chip--{{ kf.mode }}">{{ kf.mode | upper }}</span>
-      <span class="feed-name">{{ kf.keyword }}</span>
-      <button class="btn btn-delete" title="Remove"
-        hx-post="/settings/keywords/{{ kf.id }}/delete"
-        hx-target="#kf-{{ kf.id }}"
-        hx-swap="outerHTML swap:150ms">[DEL] PURGE</button>
-    </div>
-    {% else %}
-    <p class="fui-settings-note" style="margin:0">MATRIX_EMPTY / NO_FILTERS</p>
-    {% endfor %}
-  </div>
-
-  <form method="POST" action="/settings/keywords/add" class="add-feed-form" style="margin-top:12px">
-    <input class="field-input" type="text" name="keyword" placeholder="KEYWORD / PHRASE" required>
-    <select class="field-input field-select" name="mode">
-      <option value="emphasize">EMPHASIZE</option>
-      <option value="suppress">SUPPRESS</option>
-    </select>
-    <button class="btn" type="submit">ADD ──►</button>
-  </form>
-</div>
-{% else %}
 <section class="settings-section">
   <h3 class="settings-heading">Keyword Filters</h3>
   <p class="settings-note">
     <strong>Emphasize</strong> — highlights matching words in titles and abstracts.<br>
     <strong>Suppress</strong> — hides matching items by default (toggle to reveal).
   </p>
-
   <div class="feed-list" id="keyword-list">
     {% for kf in keyword_filters %}
     <div class="feed-row" id="kf-{{ kf.id }}">
@@ -158,7 +312,6 @@
     <p class="settings-note" style="margin:0">No keyword filters yet.</p>
     {% endfor %}
   </div>
-
   <form method="POST" action="/settings/keywords/add" class="add-feed-form" style="margin-top:12px">
     <input class="field-input" type="text" name="keyword" placeholder="Keyword or phrase" required>
     <select class="field-input field-select" name="mode">
@@ -168,56 +321,7 @@
     <button class="btn" type="submit">Add</button>
   </form>
 </section>
-{% endif %}
 
-<!-- ── Sources ── -->
-{% if ui_theme == 'fui' %}
-<div class="fui-settings-section">
-  <div class="fui-settings-hdr">
-    // SRC_REGISTRY
-    <span class="fui-settings-hdr-tag">FEED/INGEST</span>
-  </div>
-  <p class="fui-settings-note">RSS/ATOM · YT_CHANNEL (<code>youtube.com/feeds/videos.xml?channel_id=…</code>) · MASTODON (<code>mastodon.social/@user.rss</code>) / ALL ITEMS FETCHED / NO FILTER</p>
-
-  <div class="feed-list" id="feed-list">
-    {% for feed in feeds %}
-    <div class="feed-row" id="feed-{{ feed.id }}">
-      <span class="lang-chip">{{ feed.lang | upper }}</span>
-      <span class="type-chip type-chip--{{ feed.feed_type or 'rss' }}">{{ (feed.feed_type or 'rss') | upper }}</span>
-      <span class="feed-name">{{ feed.name }}</span>
-      <span class="feed-url">{{ feed.url }}</span>
-      <button class="btn btn-delete" title="Remove"
-        hx-post="/settings/feeds/{{ feed.id }}/delete"
-        hx-target="#feed-{{ feed.id }}"
-        hx-swap="outerHTML swap:150ms">[DEL] PURGE</button>
-    </div>
-    {% endfor %}
-  </div>
-
-  <form method="POST" action="/settings/feeds/add" class="add-feed-form">
-    <input class="field-input" type="text" name="name" placeholder="SRC_NAME" required>
-    <input class="field-input" type="url"  name="url"  placeholder="FEED_URL" required>
-    <select class="field-input field-select" name="feed_type">
-      <option value="rss">RSS</option>
-      <option value="youtube">YOUTUBE</option>
-      <option value="mastodon">MASTODON</option>
-    </select>
-    <select class="field-input field-select" name="lang">
-      <option value="en">EN</option>
-      <option value="de">DE</option>
-      <option value="fr">FR</option>
-      <option value="es">ES</option>
-    </select>
-    <select class="field-input field-select" name="collection_id">
-      <option value="">NO_COLLECTION</option>
-      {% for col in collections %}
-      <option value="{{ col.id }}">{{ col.name }}</option>
-      {% endfor %}
-    </select>
-    <button class="btn" type="submit">REGISTER ──►</button>
-  </form>
-</div>
-{% else %}
 <section class="settings-section">
   <h3 class="settings-heading">Sources</h3>
   <p class="settings-note">
@@ -226,7 +330,6 @@
     or Mastodon account feed (<code>mastodon.social/@user.rss</code>).
     No keyword filtering for feeds — everything they publish is fetched.
   </p>
-
   <div class="feed-list" id="feed-list">
     {% for feed in feeds %}
     <div class="feed-row" id="feed-{{ feed.id }}">
@@ -241,7 +344,6 @@
     </div>
     {% endfor %}
   </div>
-
   <form method="POST" action="/settings/feeds/add" class="add-feed-form">
     <input class="field-input" type="text" name="name" placeholder="Source name" required>
     <input class="field-input" type="url"  name="url"  placeholder="Feed URL" required>
@@ -265,52 +367,13 @@
     <button class="btn" type="submit">Add Source</button>
   </form>
 </section>
-{% endif %}
 
-<!-- ── API Queries ── -->
-{% if ui_theme == 'fui' %}
-<form method="POST" action="/settings/queries">
-  <div class="fui-settings-section">
-    <div class="fui-settings-hdr">
-      // QUERY_VECTORS
-      <span class="fui-settings-hdr-tag">API/SEARCH</span>
-    </div>
-    <p class="fui-settings-note">OPENALEX=PLAIN_KW (OR SUPPORTED) / BASE=SOLR_WILDCARDS (<code>surrealis*</code> MATCHES ALL VARIANTS)</p>
-
-    <div class="field-group">
-      <div class="field">
-        <label class="field-label">OPENALEX / L:EN</label>
-        <input class="field-input" type="text" name="query_openalex_en"
-               value="{{ settings.get('query_openalex_en', '') }}">
-      </div>
-      <div class="field">
-        <label class="field-label">OPENALEX / L:DE</label>
-        <input class="field-input" type="text" name="query_openalex_de"
-               value="{{ settings.get('query_openalex_de', '') }}">
-      </div>
-      <div class="field">
-        <label class="field-label">BASE / L:EN</label>
-        <input class="field-input" type="text" name="query_base_en"
-               value="{{ settings.get('query_base_en', '') }}">
-      </div>
-      <div class="field">
-        <label class="field-label">BASE / L:DE</label>
-        <input class="field-input" type="text" name="query_base_de"
-               value="{{ settings.get('query_base_de', '') }}">
-      </div>
-    </div>
-
-    <button class="btn btn-save" type="submit">COMMIT ──►</button>
-  </div>
-</form>
-{% else %}
 <form method="POST" action="/settings/queries">
   <section class="settings-section">
     <h3 class="settings-heading">Academic API Queries</h3>
     <p class="settings-note">
       OpenAlex: plain keyword terms (supports OR). BASE: Solr wildcards — <code>surrealis*</code> matches all variants.
     </p>
-
     <div class="field-group">
       <div class="field">
         <label class="field-label">OpenAlex — English</label>
@@ -333,10 +396,10 @@
                value="{{ settings.get('query_base_de', '') }}">
       </div>
     </div>
-
     <button class="btn btn-save" type="submit">Save Queries</button>
   </section>
 </form>
+
 {% endif %}
 
 {% endblock %}

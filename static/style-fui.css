@@ -1889,6 +1889,276 @@
   );
 }
 
+/* ── Inbox split-panel action strip (triage command bar) ────────────────── */
+
+[data-theme="fui"] .fui-action-strip {
+  flex-shrink:    0;
+  border-top:     1px solid var(--p4);
+  display:        flex;
+  flex-direction: column;
+  background:     rgba(0,0,0,0.18);
+}
+[data-theme="fui"] .fui-action-strip-hdr {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.2em;
+  color:          var(--p5);
+  padding:        4px 16px 3px;
+  border-bottom:  1px solid rgba(180,184,255,0.06);
+  text-transform: uppercase;
+}
+[data-theme="fui"] .fui-action-strip-btns {
+  display: flex;
+}
+[data-theme="fui"] .fui-act-btn {
+  flex:           1;
+  font-family:    var(--pfont);
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  color:          var(--p4);
+  background:     transparent;
+  border:         none;
+  border-right:   1px solid rgba(180,184,255,0.08);
+  padding:        8px 4px;
+  cursor:         pointer;
+  text-align:     center;
+  transition:     color 0.1s, background 0.1s;
+  text-transform: uppercase;
+  white-space:    nowrap;
+}
+[data-theme="fui"] .fui-act-btn:last-child { border-right: none; }
+[data-theme="fui"] .fui-act-btn:not([disabled]):hover {
+  background: rgba(180,184,255,0.07);
+  color:      var(--p2);
+}
+[data-theme="fui"] .fui-act-btn:not([disabled]):active {
+  background: rgba(180,184,255,0.14);
+}
+[data-theme="fui"] .fui-act-btn[disabled] { opacity: 0.22; cursor: not-allowed; }
+[data-theme="fui"] .fui-act-flag:not([disabled]) { color: var(--p3); }
+[data-theme="fui"] .fui-act-del:not([disabled])  { color: rgba(255,130,120,0.8); }
+
+/* ── Settings two-column terminal config ─────────────────────────────────── */
+
+[data-theme="fui"] .fui-settings-wrapper {
+  display:  flex;
+  flex:     1;
+  overflow: hidden;
+}
+
+[data-theme="fui"] .fui-cfg-nav {
+  width:          180px;
+  flex-shrink:    0;
+  border-right:   1px solid var(--p4);
+  display:        flex;
+  flex-direction: column;
+  overflow:       hidden;
+  background:     rgba(0,0,0,0.12);
+}
+[data-theme="fui"] .fui-cfg-nav-hdr {
+  flex-shrink:  0;
+  border-bottom: 1px solid var(--p4);
+  padding:       10px 14px 9px;
+  background:    rgba(180,184,255,0.02);
+}
+[data-theme="fui"] .fui-cfg-nav-hdr-top {
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.22em;
+  color:          var(--p3);
+  margin-bottom:  2px;
+}
+[data-theme="fui"] .fui-cfg-nav-hdr-sub {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.14em;
+  color:          var(--p5);
+}
+[data-theme="fui"] .fui-cfg-nav-list {
+  flex:       1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+[data-theme="fui"] .fui-cfg-nav-list::-webkit-scrollbar { width: 2px; }
+[data-theme="fui"] .fui-cfg-nav-list::-webkit-scrollbar-track { background: transparent; }
+[data-theme="fui"] .fui-cfg-nav-list::-webkit-scrollbar-thumb { background: var(--p5); }
+
+[data-theme="fui"] .fui-cfg-nav-item {
+  padding:        10px 14px 8px;
+  cursor:         pointer;
+  border-bottom:  1px solid rgba(180,184,255,0.05);
+  border-left:    2px solid transparent;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  transition:     background 0.1s, border-color 0.1s;
+  outline:        none;
+}
+[data-theme="fui"] .fui-cfg-nav-item:hover { background: rgba(180,184,255,0.04); }
+[data-theme="fui"] .fui-cfg-nav-item:focus { background: rgba(180,184,255,0.04); }
+[data-theme="fui"] .fui-cfg-nav-item.fui-cfg-active {
+  background:   rgba(180,184,255,0.07);
+  border-left:  2px solid var(--p1);
+}
+[data-theme="fui"] .fui-cfg-nav-label {
+  font-family:    var(--pfont);
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  color:          var(--p3);
+  white-space:    nowrap;
+}
+[data-theme="fui"] .fui-cfg-nav-item.fui-cfg-active .fui-cfg-nav-label {
+  color: var(--p1);
+  text-shadow: 0 0 5px rgba(180,184,255,0.3);
+}
+[data-theme="fui"] .fui-cfg-nav-sub {
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.14em;
+  color:          var(--p5);
+}
+[data-theme="fui"] .fui-cfg-nav-footer {
+  flex-shrink:    0;
+  border-top:     1px solid var(--p5);
+  padding:        6px 14px;
+  font-family:    var(--pfont);
+  font-size:      7px;
+  letter-spacing: 0.1em;
+  color:          var(--p5);
+  line-height:    1.5;
+}
+
+[data-theme="fui"] .fui-cfg-content {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  overflow:       hidden;
+  min-width:      0;
+}
+[data-theme="fui"] .fui-cfg-banner {
+  flex-shrink:    0;
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.18em;
+  color:          var(--p2);
+  background:     rgba(180,184,255,0.06);
+  border-bottom:  1px solid var(--p3);
+  padding:        5px 18px;
+  text-shadow:    0 0 6px rgba(180,184,255,0.4);
+}
+[data-theme="fui"] .fui-cfg-banner::before { content: '[ '; }
+[data-theme="fui"] .fui-cfg-banner::after  { content: ' ]'; }
+
+[data-theme="fui"] .fui-cfg-panel {
+  display:        none;
+  flex-direction: column;
+  flex:           1;
+  overflow:       hidden;
+  min-height:     0;
+}
+[data-theme="fui"] .fui-cfg-panel.fui-cfg-active { display: flex; }
+
+[data-theme="fui"] .fui-cfg-body {
+  flex:       1;
+  overflow-y: auto;
+  padding:    18px 22px 28px;
+  min-height: 0;
+}
+[data-theme="fui"] .fui-cfg-body::-webkit-scrollbar       { width: 3px; }
+[data-theme="fui"] .fui-cfg-body::-webkit-scrollbar-track { background: transparent; }
+[data-theme="fui"] .fui-cfg-body::-webkit-scrollbar-thumb { background: var(--p5); }
+
+[data-theme="fui"] .fui-cfg-note {
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.06em;
+  color:          var(--p4);
+  margin-bottom:  18px;
+  line-height:    1.75;
+}
+[data-theme="fui"] .fui-cfg-note code {
+  color:       var(--p3);
+  font-family: var(--pfont);
+  font-size:   8px;
+  border:      1px solid var(--p5);
+  padding:     0 3px;
+}
+[data-theme="fui"] .fui-cfg-empty {
+  font-family:    var(--pfont);
+  font-size:      8px;
+  letter-spacing: 0.12em;
+  color:          var(--p5);
+  padding:        8px 0;
+  margin-bottom:  10px;
+}
+
+[data-theme="fui"] .fui-cfg-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+  margin-bottom:  18px;
+}
+[data-theme="fui"] .fui-cfg-field-row {
+  display:     flex;
+  align-items: center;
+  gap:         14px;
+  padding:     7px 0;
+  border-bottom: 1px solid rgba(180,184,255,0.05);
+}
+[data-theme="fui"] .fui-cfg-field-label {
+  font-family:    var(--pfont);
+  font-size:      8px;
+  letter-spacing: 0.16em;
+  color:          var(--p4);
+  white-space:    nowrap;
+  min-width:      160px;
+  flex-shrink:    0;
+}
+[data-theme="fui"] .fui-cfg-field-btns {
+  display: flex;
+  gap:     6px;
+}
+[data-theme="fui"] .fui-cfg-btn {
+  font-family:    var(--pfont);
+  font-size:      9px;
+  letter-spacing: 0.12em;
+  color:          var(--p4);
+  background:     transparent;
+  border:         1px solid var(--p5);
+  padding:        5px 12px;
+  cursor:         pointer;
+  transition:     color 0.1s, border-color 0.1s, background 0.1s;
+  text-transform: uppercase;
+}
+[data-theme="fui"] .fui-cfg-btn:hover {
+  color:       var(--p2);
+  border-color: var(--p3);
+  background:  rgba(180,184,255,0.04);
+}
+[data-theme="fui"] .fui-cfg-btn.fui-cfg-btn-active {
+  color:       var(--p1);
+  border-color: var(--p2);
+  background:  rgba(180,184,255,0.08);
+  text-shadow: 0 0 5px rgba(180,184,255,0.35);
+}
+[data-theme="fui"] .fui-cfg-field-input {
+  flex:       1;
+  min-width:  0;
+}
+[data-theme="fui"] .fui-cfg-submit-row {
+  margin-top: 14px;
+}
+[data-theme="fui"] .fui-cfg-add-form {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       6px;
+  margin-top: 10px;
+}
+[data-theme="fui"] .fui-cfg-add-form--src {
+  flex-direction: column;
+  align-items:    flex-start;
+}
+
 /* ── Inbox / queue view header (Flagged, Interesting, Read) ─────────────── */
 
 [data-theme="fui"] .fui-view-hdr {

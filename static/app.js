@@ -87,8 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
   }
 
-  const isFui    = document.documentElement.dataset.theme === 'fui';
-  const isRiver  = window.location.pathname === '/river';
+  const isFui      = document.documentElement.dataset.theme === 'fui';
+  const isRiver    = window.location.pathname === '/river';
+  const isInbox    = !isRiver && !!document.getElementById('fui-data');
+  const isSettings = window.location.pathname === '/settings';
 
   // Touch session — record that the river was opened
   if (isRiver && !isFui && document.getElementById('article-list')) {
@@ -96,21 +98,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (isFui) {
-    setupFuiKeyboard(isRiver);
+    setupFuiKeyboard(isRiver, isInbox);
     startDossierDegradation();
     startNodeActivity();
     startSessionDecay();
   }
 
-  if (isFui && isRiver) {
+  if (isFui && (isRiver || isInbox)) {
     setupFuiPanel();
     startGlitchEffects();
+    startAuxPkt();
+    if (isInbox) setupInboxActions();
+  }
+
+  if (isFui && isRiver) {
     startSysMetrics();
     startPhaseVector();
-    startAuxPkt();
     startPeriodicChecksum();
     startAuxNoise();
-  } else if (!isFui) {
+  }
+
+  if (isFui && isSettings) {
+    setupSettingsNav();
+  }
+
+  if (!isFui) {
     applyKeywordFilters();
     setupKeyboardTriage();
   }
@@ -127,6 +139,7 @@ let _fuiArticles   = [];
 let _fuiActive     = null;
 let _fuiSelectGen  = 0;
 let _fuiPanelFocus = 'index'; // 'index' | 'detail'
+let _fuiSection    = 'river';
 
 function _setFuiPanelFocus(which) {
   _fuiPanelFocus = which;
@@ -161,7 +174,7 @@ function _navSetCursor(idx) {
   _navItems.forEach((el, i) => el.classList.toggle('nav-kbd-cursor', i === _navCursor));
 }
 
-function setupFuiKeyboard(isRiver) {
+function setupFuiKeyboard(isRiver, isInbox = false) {
   _navItems = [...document.querySelectorAll('.sidebar-nav .nav-item')];
 
   document.addEventListener('keydown', e => {
@@ -199,8 +212,8 @@ function setupFuiKeyboard(isRiver) {
       return;
     }
 
-    // ── Right → advance panel (river only) ───────────────────────────────
-    if (e.key === 'ArrowRight' && isRiver) {
+    // ── Right → advance panel (river + inbox) ────────────────────────────
+    if (e.key === 'ArrowRight' && (isRiver || isInbox)) {
       e.preventDefault();
       _setFuiPanelFocus('detail');
       return;
@@ -209,10 +222,10 @@ function setupFuiKeyboard(isRiver) {
     // ── Up/Down — context-sensitive ───────────────────────────────────────
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      if (isRiver && _fuiPanelFocus === 'detail') {
+      if ((isRiver || isInbox) && _fuiPanelFocus === 'detail') {
         const scroll = document.getElementById('fui-detail-scroll');
         if (scroll) scroll.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
-      } else if (isRiver) {
+      } else if (isRiver || isInbox) {
         const rows = [...document.querySelectorAll('.fui-index-row')];
         if (!rows.length) return;
         const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
@@ -221,18 +234,21 @@ function setupFuiKeyboard(isRiver) {
           _fuiSelectRow(rows[ni]);
           rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-      } else {
-        const main = document.querySelector('.main');
-        if (main) main.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
       }
       return;
     }
 
-    // ── Triage (river only) ───────────────────────────────────────────────
-    if (!isRiver || !_fuiActive) return;
-    const map = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
+    // ── Triage (river + inbox) ────────────────────────────────────────────
+    if ((!isRiver && !isInbox) || !_fuiActive) return;
+    const map = { f: 'flag', i: 'interesting', r: 'read', u: 'unread', Delete: 'delete' };
     const act = map[e.key];
     if (!act) return;
+    // On inbox, honour action-strip availability (e.g. can't flag on flagged queue)
+    const strip = document.getElementById('fui-action-strip');
+    if (strip) {
+      const btn = [...strip.querySelectorAll('.fui-act-btn')].find(b => b.dataset.action === act);
+      if (!btn || btn.disabled) return;
+    }
     e.preventDefault();
     _fuiTriage(_fuiActive, act);
   });
@@ -241,6 +257,7 @@ function setupFuiKeyboard(isRiver) {
 function setupFuiPanel() {
   const dataEl = document.getElementById('fui-data');
   if (!dataEl) return;
+  _fuiSection  = dataEl.dataset.section || 'river';
   _fuiArticles = JSON.parse(dataEl.textContent || '[]');
 
   const list = document.getElementById('fui-index-list');
@@ -403,6 +420,14 @@ function _fuiSelectRow(row) {
       const dateStr  = a.date_published ? a.date_published.slice(0, 10).replace(/-/g, '.') : '????.??.??';
       const doiStr   = a.doi ? a.doi.slice(0, 40) : 'NULL';
 
+      const statusMap = {
+        river:       'UNREAD',
+        flagged:     'FLAGGED / QUEUE_01',
+        interesting: 'INT / QUEUE_02',
+        read:        'ARCHIVED / LOG',
+      };
+      const statusStr = statusMap[_fuiSection] || 'UNREAD';
+
       const titleHtml = a.url
         ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
         : _esc(a.title);
@@ -413,6 +438,8 @@ function _fuiSelectRow(row) {
 
       const abstractHtml = a.abstract ? _esc(a.abstract) : null;
 
+      const hasActionStrip = !!document.getElementById('fui-action-strip');
+
       scroll.innerHTML = `
         <div class="fui-kv-block">
           <span class="fui-k">FILE_ID</span>   <span class="fui-v fui-v-bright">${fileId}</span>
@@ -421,7 +448,7 @@ function _fuiSelectRow(row) {
           <span class="fui-k">L</span>          <span class="fui-v">${langStr}</span>
           <span class="fui-k">TS</span>         <span class="fui-v">${dateStr}</span>
           <span class="fui-k">SRC_REF</span>   <span class="fui-v">${srcStr}</span>
-          <span class="fui-k">STATUS</span>     <span class="fui-v fui-v-bright">UNREAD</span>
+          <span class="fui-k">STATUS</span>     <span class="fui-v fui-v-bright">${statusStr}</span>
           <span class="fui-k">REVISION</span>  <span class="fui-v">${revision}</span>
           <span class="fui-k">SECTOR</span>    <span class="fui-v">${sector}</span>
           <span class="fui-k">DOI</span>        <span class="fui-v">${doiStr}</span>
@@ -432,17 +459,22 @@ function _fuiSelectRow(row) {
         ${abstractHtml
           ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
           : '<div class="fui-no-abstract">NO_ABSTRACT / RECORD_INCOMPLETE</div>'}
+        ${!hasActionStrip ? `
         <div class="fui-detail-actions" id="fui-actions-${a.id}">
           <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">[F] FLAG</button>
           <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">[I] QUEUE</button>
           <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">[R] ARCHIVE</button>
           <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">[DEL] PURGE</button>
-        </div>
+        </div>` : ''}
       `;
 
-      scroll.querySelectorAll('[data-fui-action]').forEach(b => {
-        b.addEventListener('click', () => _fuiTriage(_fuiActive, b.dataset.fuiAction));
-      });
+      if (!hasActionStrip) {
+        scroll.querySelectorAll('[data-fui-action]').forEach(b => {
+          b.addEventListener('click', () => _fuiTriage(_fuiActive, b.dataset.fuiAction));
+        });
+      } else {
+        _enableActionStrip();
+      }
 
       // Log the record load
       const logEl = document.getElementById('fui-syslog-lines');
@@ -498,6 +530,10 @@ function _fuiTriage(row, action) {
         if (secEl)   secEl.textContent   = '--';
         const kbdEl   = document.getElementById('fui-kbd-hint');
         if (kbdEl)   kbdEl.textContent   = '── SEL TO ACT';
+        // Disable action strip on empty buffer
+        document.getElementById('fui-action-strip')
+          ?.querySelectorAll('.fui-act-btn')
+          .forEach(b => { b.disabled = true; });
         _fuiActive = null;
       }
     }, 160);
@@ -511,6 +547,50 @@ function _esc(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ── Inbox action strip ────────────────────────────────────────────────────────
+
+function _enableActionStrip() {
+  const strip = document.getElementById('fui-action-strip');
+  if (!strip) return;
+  strip.querySelectorAll('.fui-act-btn').forEach(btn => {
+    btn.disabled = false;
+    btn.onclick = () => { if (_fuiActive) _fuiTriage(_fuiActive, btn.dataset.action); };
+  });
+}
+
+function setupInboxActions() {
+  // Buttons start disabled; _enableActionStrip() activates them on row select.
+  // Wire touch-session so last-opened is recorded
+  setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
+}
+
+// ── Settings two-column nav ───────────────────────────────────────────────────
+
+function setupSettingsNav() {
+  const navItems = [...document.querySelectorAll('.fui-cfg-nav-item')];
+  const panels   = [...document.querySelectorAll('.fui-cfg-panel')];
+  if (!navItems.length || !panels.length) return;
+
+  function activate(target) {
+    navItems.forEach(n => n.classList.toggle('fui-cfg-active', n.dataset.target === target));
+    panels.forEach(p => p.classList.toggle('fui-cfg-active', p.id === target));
+    try { localStorage.setItem('fui-cfg-tab', target); } catch (_) {}
+  }
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => activate(item.dataset.target));
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(item.dataset.target); }
+    });
+  });
+
+  // Restore stored tab or default to first
+  let stored = null;
+  try { stored = localStorage.getItem('fui-cfg-tab'); } catch (_) {}
+  const valid = panels.some(p => p.id === stored);
+  activate(valid ? stored : panels[0].id);
 }
 
 // ── Dossier degradation — x-ray corrupts with session age + triage ────────────
