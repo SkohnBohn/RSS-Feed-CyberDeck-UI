@@ -1,6 +1,6 @@
-# Sky — Surrealism Papers Dashboard
+# RSS Feed Dashboard with CyberDeck aesthetic 
 
-A desktop app for tracking surrealism research papers, RSS feeds, and academic sources. Runs as a native window powered by Flask + pywebview.
+A desktop app for tracking research papers, RSS feeds, and academic sources. Runs as a native window powered by Flask + pywebview.
 
 ---
 
