@@ -1,16 +1,13 @@
 // ── Minimal hx-post / hx-target / hx-swap handler ───────────────────────────
-// Replaces the HTMX CDN dependency so the app works fully offline.
-// Handles the three attributes we use: hx-post, hx-target, hx-swap="outerHTML"
-
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[hx-post]');
   if (!btn) return;
   e.preventDefault();
 
-  const url      = btn.getAttribute('hx-post');
+  const url       = btn.getAttribute('hx-post');
   const targetSel = btn.getAttribute('hx-target');
-  const swap     = btn.getAttribute('hx-swap') || 'outerHTML';
-  const target   = targetSel ? document.querySelector(targetSel) : btn;
+  const swap      = btn.getAttribute('hx-swap') || 'outerHTML';
+  const target    = targetSel ? document.querySelector(targetSel) : btn;
 
   if (target) target.style.transition = 'opacity 0.15s, transform 0.15s';
 
@@ -21,8 +18,7 @@ document.addEventListener('click', async (e) => {
     if (html) {
       target.outerHTML = html;
     } else {
-      // fade out then remove
-      target.style.opacity = '0';
+      target.style.opacity   = '0';
       target.style.transform = 'translateX(6px)';
       setTimeout(() => target.remove(), 160);
     }
@@ -30,33 +26,58 @@ document.addEventListener('click', async (e) => {
 });
 
 // ── Fetch Now button ─────────────────────────────────────────────────────────
-
 async function triggerFetch() {
   const btn = document.getElementById('fetch-btn');
   if (!btn || btn.disabled) return;
   btn.disabled = true;
-  btn.textContent = 'Fetching…';
-
-  try {
-    await fetch('/fetch', { method: 'POST' });
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Fetch Now';
-    return;
-  }
-
-  const poll = setInterval(async () => {
+  const isFui = document.documentElement.dataset.theme === 'fui';
+  if (isFui) {
+    // Animated sync progress for FUI
+    const frames = ['SYNC ▒░░░', 'SYNC ▒▒░░', 'SYNC ▒▒▒░', 'SYNC ▒▒▒▒'];
+    let fi = 0;
+    btn.textContent = frames[0];
+    const anim = setInterval(() => { fi = (fi + 1) % frames.length; btn.textContent = frames[fi]; }, 400);
     try {
-      const data = await fetch('/fetch-status').then(r => r.json());
-      if (!data.running) { clearInterval(poll); window.location.reload(); }
-    } catch (_) {}
-  }, 2000);
+      await fetch('/fetch', { method: 'POST' });
+    } catch {
+      clearInterval(anim);
+      btn.disabled    = false;
+      btn.textContent = 'SYNC_INIT ──►';
+      return;
+    }
+    const poll = setInterval(async () => {
+      try {
+        const data = await fetch('/fetch-status').then(r => r.json());
+        if (!data.running) {
+          clearInterval(poll);
+          clearInterval(anim);
+          btn.textContent = 'SYNC_OK';
+          setTimeout(() => window.location.reload(), 2000);
+        }
+      } catch (_) {}
+    }, 2000);
+  } else {
+    btn.textContent = 'Fetching…';
+    try {
+      await fetch('/fetch', { method: 'POST' });
+    } catch {
+      btn.disabled    = false;
+      btn.textContent = 'Fetch Now';
+      return;
+    }
+    const poll = setInterval(async () => {
+      try {
+        const data = await fetch('/fetch-status').then(r => r.json());
+        if (!data.running) { clearInterval(poll); window.location.reload(); }
+      } catch (_) {}
+    }, 2000);
+  }
 }
 
-// If the page loads mid-fetch, start polling immediately
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('fetch-btn');
-  if (btn && btn.textContent.trim() === 'Fetching…') {
+  const btnText = btn?.textContent.trim();
+  if (btn && (btnText === 'Fetching…' || btnText === 'SYNC… ▒▒▒▒')) {
     btn.disabled = true;
     const poll = setInterval(async () => {
       try {
@@ -65,4 +86,934 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (_) {}
     }, 2000);
   }
+
+  const isFui      = document.documentElement.dataset.theme === 'fui';
+  const isRiver    = window.location.pathname === '/river';
+  const isInbox    = !isRiver && !!document.getElementById('fui-data');
+  const isSettings = window.location.pathname === '/settings';
+
+  // Touch session — record that the river was opened
+  if (isRiver && !isFui && document.getElementById('article-list')) {
+    setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
+  }
+
+  if (isFui) {
+    setupFuiKeyboard(isRiver, isInbox);
+    startDossierDegradation();
+    startNodeActivity();
+    startSessionDecay();
+  }
+
+  if (isFui && (isRiver || isInbox)) {
+    setupFuiPanel();
+    startGlitchEffects();
+    startAuxPkt();
+    if (isInbox) setupInboxActions();
+  }
+
+  if (isFui && isRiver) {
+    startSysMetrics();
+    startPhaseVector();
+    startPeriodicChecksum();
+    startAuxNoise();
+  }
+
+  if (isFui && isSettings) {
+    setupSettingsNav();
+  }
+
+  if (!isFui) {
+    applyKeywordFilters();
+    setupKeyboardTriage();
+  }
+
+  // Shared ambient — element-guarded; auto-activates in whichever theme has the DOM element
+  startFuiClock();
+  startRecvCounter();
+  startSyslog();
 });
+
+// ── FUI split-panel ──────────────────────────────────────────────────────────
+
+let _fuiArticles   = [];
+let _fuiActive     = null;
+let _fuiSelectGen  = 0;
+let _fuiPanelFocus = 'index'; // 'index' | 'detail'
+let _fuiSection    = 'river';
+
+function _setFuiPanelFocus(which) {
+  _fuiPanelFocus = which;
+  document.querySelector('.fui-index-panel')?.classList.toggle('fui-panel-focused', which === 'index');
+  document.querySelector('.fui-detail-panel')?.classList.toggle('fui-panel-focused', which === 'detail');
+}
+
+// ── Unified keyboard zone system (sidebar ↔ index ↔ detail) ─────────────────
+let _navItems      = [];
+let _navCursor     = -1;
+let _sidebarActive = false;
+
+function _activateSidebar() {
+  _sidebarActive = true;
+  document.querySelector('.sidebar-nav')?.classList.add('sidebar-nav-focused');
+  if (_navCursor < 0) _navCursor = Math.max(0, _navItems.findIndex(el => el.classList.contains('active')));
+  _navSetCursor(_navCursor);
+  // Remove panel focus indicator while sidebar is active
+  document.querySelector('.fui-index-panel')?.classList.remove('fui-panel-focused');
+  document.querySelector('.fui-detail-panel')?.classList.remove('fui-panel-focused');
+}
+
+function _deactivateSidebar(returnZone) {
+  _sidebarActive = false;
+  document.querySelector('.sidebar-nav')?.classList.remove('sidebar-nav-focused');
+  _navItems.forEach(el => el.classList.remove('nav-kbd-cursor'));
+  if (returnZone) _setFuiPanelFocus(returnZone);
+}
+
+function _navSetCursor(idx) {
+  _navCursor = Math.max(0, Math.min(_navItems.length - 1, idx));
+  _navItems.forEach((el, i) => el.classList.toggle('nav-kbd-cursor', i === _navCursor));
+}
+
+function setupFuiKeyboard(isRiver, isInbox = false) {
+  _navItems = [...document.querySelectorAll('.sidebar-nav .nav-item')];
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // ── Sidebar zone ─────────────────────────────────────────────────────
+    if (_sidebarActive) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        _navSetCursor(_navCursor + (e.key === 'ArrowDown' ? 1 : -1));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_navItems[_navCursor]) window.location.href = _navItems[_navCursor].href;
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        _deactivateSidebar(isRiver ? 'index' : null);
+        return;
+      }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); return; }
+      return;
+    }
+
+    // ── Left → enter sidebar (or retreat panel) ───────────────────────────
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (isRiver && _fuiPanelFocus === 'detail') {
+        _setFuiPanelFocus('index');
+      } else {
+        _activateSidebar();
+      }
+      return;
+    }
+
+    // ── Right → advance panel (river + inbox) ────────────────────────────
+    if (e.key === 'ArrowRight' && (isRiver || isInbox)) {
+      e.preventDefault();
+      _setFuiPanelFocus('detail');
+      return;
+    }
+
+    // ── Up/Down — context-sensitive ───────────────────────────────────────
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if ((isRiver || isInbox) && _fuiPanelFocus === 'detail') {
+        const scroll = document.getElementById('fui-detail-scroll');
+        if (scroll) scroll.scrollBy({ top: e.key === 'ArrowDown' ? 110 : -110, behavior: 'smooth' });
+      } else if (isRiver || isInbox) {
+        const rows = [...document.querySelectorAll('.fui-index-row')];
+        if (!rows.length) return;
+        const ci = _fuiActive ? rows.indexOf(_fuiActive) : -1;
+        const ni = Math.max(0, Math.min(rows.length - 1, ci + (e.key === 'ArrowDown' ? 1 : -1)));
+        if (rows[ni] && rows[ni] !== _fuiActive) {
+          _fuiSelectRow(rows[ni]);
+          rows[ni].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      return;
+    }
+
+    // ── Triage (river + inbox) ────────────────────────────────────────────
+    if ((!isRiver && !isInbox) || !_fuiActive) return;
+    const map = { f: 'flag', i: 'interesting', r: 'read', u: 'unread', Delete: 'delete' };
+    const act = map[e.key];
+    if (!act) return;
+    // On inbox, honour action-strip availability (e.g. can't flag on flagged queue)
+    const strip = document.getElementById('fui-action-strip');
+    if (strip) {
+      const btn = [...strip.querySelectorAll('.fui-act-btn')].find(b => b.dataset.action === act);
+      if (!btn || btn.disabled) return;
+    }
+    e.preventDefault();
+    _fuiTriage(_fuiActive, act);
+  });
+}
+
+function setupFuiPanel() {
+  const dataEl = document.getElementById('fui-data');
+  if (!dataEl) return;
+  _fuiSection  = dataEl.dataset.section || 'river';
+  _fuiArticles = JSON.parse(dataEl.textContent || '[]');
+
+  const list = document.getElementById('fui-index-list');
+  if (!list) return;
+
+  const firstRow = list.querySelector('.fui-index-row');
+  if (firstRow) _fuiSelectRow(firstRow);
+  _setFuiPanelFocus('index');
+
+  list.addEventListener('click', e => {
+    const row = e.target.closest('.fui-index-row');
+    if (row) { _fuiSelectRow(row); _deactivateSidebar('index'); }
+  });
+
+  // Touch session
+  setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
+}
+
+// ── Live clock + session uptime ───────────────────────────────────────────────
+function startFuiClock() {
+  const clockEl  = document.getElementById('fui-clock');
+  const daysEl   = document.getElementById('fui-up-days');
+  const hmsEl    = document.getElementById('fui-up-hms');
+  if (!clockEl && !daysEl) return;
+  const t0 = Date.now();
+  function tick() {
+    const now = new Date();
+    if (clockEl) clockEl.textContent = now.toTimeString().slice(0, 8);
+    const s   = Math.floor((Date.now() - t0) / 1000);
+    const dd  = String(Math.floor(s / 86400)).padStart(3, '0');
+    const hh  = String(Math.floor((s % 86400) / 3600)).padStart(2, '0');
+    const mm  = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss  = String(s % 60).padStart(2, '0');
+    if (daysEl) daysEl.textContent = dd;
+    if (hmsEl)  hmsEl.textContent  = `${hh}:${mm}:${ss}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ── RECV counter ──────────────────────────────────────────────────────────────
+function startRecvCounter() {
+  const el = document.getElementById('fui-recv-count');
+  if (!el) return;
+  let val = Math.floor(Math.random() * 0xFFFF);
+  function bump() {
+    val = (val + Math.floor(Math.random() * 0x1FF + 1)) & 0xFFFF;
+    el.textContent = `RCV:0x${val.toString(16).toUpperCase().padStart(4, '0')}`;
+    setTimeout(bump, 1600 + Math.random() * 2800);
+  }
+  setTimeout(bump, 800 + Math.random() * 1200);
+}
+
+// ── System log ────────────────────────────────────────────────────────────────
+const _syslogMessages = [
+  'NODE_07 SYNC / CRC:OK',
+  'NODE_11 HEARTBEAT / ACK',
+  'ARCHIVE SCAN / FILES:0031',
+  'NET_RECV 0xAF31 / PKT:OK',
+  'MEM SWEEP / FREED:04C8',
+  'PROC_01 HEARTBEAT / T:14:22:31',
+  'NODE_19 UPLINK / SIG:+82%',
+  'SECTOR_SCAN / COMPLETE',
+  'BUF_FLUSH / NOMINAL',
+  'NODE_14 IDLE / STANDBY',
+  'CRC_CHECK / DELTA:0.001',
+  'HEAP_ALLOC / OK',
+  'INDEX_REBUILD / DONE',
+  'NODE_07 PKT_RECV / ACK',
+  'UPLINK STABLE / T:+047d',
+  'AUTH_TOKEN / REFRESH:OK',
+  'COMPRESS / RATIO:3.2:1',
+  'NODE_11 SYNC / COMPLETE',
+];
+
+function startSyslog() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function addLine() {
+    const msg = _syslogMessages[Math.floor(Math.random() * _syslogMessages.length)];
+    const div = document.createElement('div');
+    div.className = 'fui-syslog-line fui-sl-bright';
+    div.textContent = msg;
+    container.appendChild(div);
+    // Age out older lines
+    const lines = container.querySelectorAll('.fui-syslog-line');
+    lines.forEach((l, i) => {
+      if (i < lines.length - 1) {
+        l.classList.remove('fui-sl-bright');
+        l.classList.add('fui-sl-dim');
+      }
+    });
+    // Evict oldest non-kbd-hint lines (keep at most 4 regular + 1 hint)
+    const nonHint = [...container.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+    while (nonHint.length > 4) { nonHint.shift().remove(); }
+    setTimeout(addLine, 2800 + Math.random() * 4500);
+  }
+  setTimeout(addLine, 1500);
+}
+
+function _fuiSelectRow(row) {
+  // Ghost afterglow on the previously active row
+  if (_fuiActive && _fuiActive !== row) {
+    const prev = _fuiActive;
+    prev.classList.add('fui-row-ghost');
+    setTimeout(() => prev.classList.remove('fui-row-ghost'), 800);
+  }
+  document.querySelectorAll('.fui-index-row').forEach(r => r.classList.remove('fui-row-active'));
+  row.classList.add('fui-row-active');
+  _fuiActive = row;
+
+  const idx = parseInt(row.dataset.idx);
+  const a   = _fuiArticles[idx];
+  if (!a) return;
+
+  // Pre-compute derived values — used immediately in header/aux AND later in KV block
+  const crcHex   = a.id ? `0x${(a.id * 0x4F3D).toString(16).toUpperCase().slice(-6)}` : '0x??????';
+  const fileId   = `0x${(a.id * 0x1A3).toString(16).toUpperCase().slice(-8)}`;
+  const revision = String((a.id % 23) + 1).padStart(2, '0');
+  const sectorNum = String(a.id % 8 + 1).padStart(2, '0');
+  const sector   = `SEC_${sectorNum}`;
+  const tMs      = (3.1 + (a.id % 17) * 0.3).toFixed(3);
+
+  // Update header strip with real record values
+  const stripEl = document.getElementById('fui-detail-hdr-strip');
+  if (stripEl) stripEl.textContent =
+    `UID_${a.id.toString(16).toUpperCase().padStart(8,'0')} ·· CRC:${crcHex} ·· RECV:OK ·· T:${tMs}ms ·· NODE_07 ·· AUTH:PASS`;
+
+  // Update detail-id badge + aux column fields
+  const idEl = document.getElementById('fui-detail-id');
+  if (idEl) idEl.textContent = `UID:${a.id.toString(16).toUpperCase().padStart(6,'0')} / ${sector}`;
+  const stateEl  = document.getElementById('fui-aux-state');
+  if (stateEl)  stateEl.textContent  = 'ACT';
+  const revEl    = document.getElementById('fui-aux-rev');
+  if (revEl)    revEl.textContent    = revision;
+  const secEl    = document.getElementById('fui-aux-sector');
+  if (secEl)    secEl.textContent    = sectorNum;
+  const kbdEl    = document.getElementById('fui-kbd-hint');
+  if (kbdEl)    kbdEl.textContent    = 'F:FLAG  I:QUEUE  R:ARCH  DEL:PURGE';
+
+  const scroll = document.getElementById('fui-detail-scroll');
+  if (!scroll) return;
+  scroll.dataset.watermark = `0x${a.id.toString(16).toUpperCase().padStart(6,'0')}`;
+
+  const gen = ++_fuiSelectGen;
+
+  // Verifying flash
+  scroll.innerHTML = '<div class="fui-detail-verify">VERIFY_SEQ / CRC_CHECK…</div>';
+
+  setTimeout(() => {
+    if (_fuiSelectGen !== gen) return;
+    scroll.innerHTML = '<div class="fui-detail-verify fui-verify-ok">CRC_PASS / DECRYPT_OK</div>';
+
+    setTimeout(() => {
+      if (_fuiSelectGen !== gen) return;
+
+      const typeStr  = (a.content_type || 'ARTICLE').toUpperCase();
+      const langStr  = (a.language || 'EN').toUpperCase();
+      const srcStr   = (a.source   || 'UNKNOWN').toUpperCase().slice(0, 24);
+      const dateStr  = a.date_published ? a.date_published.slice(0, 10).replace(/-/g, '.') : '????.??.??';
+      const doiStr   = a.doi ? a.doi.slice(0, 40) : 'NULL';
+
+      const statusMap = {
+        river:       'UNREAD',
+        flagged:     'FLAGGED / QUEUE_01',
+        interesting: 'INT / QUEUE_02',
+        read:        'ARCHIVED / LOG',
+      };
+      const statusStr = statusMap[_fuiSection] || 'UNREAD';
+
+      const titleHtml = a.url
+        ? `<a href="${_esc(a.url)}" target="_blank" rel="noopener noreferrer">${_esc(a.title)}</a>`
+        : _esc(a.title);
+
+      const authorsHtml = a.authors
+        ? `${_esc(a.authors)}${a.journal ? ' // <em>' + _esc(a.journal) + '</em>' : ''}`
+        : '';
+
+      const abstractHtml = a.abstract ? _esc(a.abstract) : null;
+
+      const hasActionStrip = !!document.getElementById('fui-action-strip');
+
+      scroll.innerHTML = `
+        <div class="fui-kv-block">
+          <span class="fui-k">FILE_ID</span>   <span class="fui-v fui-v-bright">${fileId}</span>
+          <span class="fui-k">UID</span>        <span class="fui-v fui-v-bright">0x${a.id.toString(16).toUpperCase().padStart(8,'0')}</span>
+          <span class="fui-k">CLASS</span>      <span class="fui-v">${typeStr}</span>
+          <span class="fui-k">L</span>          <span class="fui-v">${langStr}</span>
+          <span class="fui-k">TS</span>         <span class="fui-v">${dateStr}</span>
+          <span class="fui-k">SRC_REF</span>   <span class="fui-v">${srcStr}</span>
+          <span class="fui-k">STATUS</span>     <span class="fui-v fui-v-bright">${statusStr}</span>
+          <span class="fui-k">REVISION</span>  <span class="fui-v">${revision}</span>
+          <span class="fui-k">SECTOR</span>    <span class="fui-v">${sector}</span>
+          <span class="fui-k">DOI</span>        <span class="fui-v">${doiStr}</span>
+          <span class="fui-k">CRC</span>        <span class="fui-v">${crcHex}</span>
+        </div>
+        <div class="fui-detail-title">${titleHtml}</div>
+        ${authorsHtml ? `<div class="fui-detail-authors">${authorsHtml}</div>` : ''}
+        ${abstractHtml
+          ? `<div class="fui-detail-abstract">${abstractHtml}</div>`
+          : '<div class="fui-no-abstract">NO_ABSTRACT / RECORD_INCOMPLETE</div>'}
+        ${!hasActionStrip ? `
+        <div class="fui-detail-actions" id="fui-actions-${a.id}">
+          <button class="btn btn-flag"   data-fui-action="flag"        data-fui-id="${a.id}">[F] FLAG</button>
+          <button class="btn"            data-fui-action="interesting"  data-fui-id="${a.id}">[I] QUEUE</button>
+          <button class="btn btn-read"   data-fui-action="read"         data-fui-id="${a.id}">[R] ARCHIVE</button>
+          <button class="btn btn-delete" data-fui-action="delete"       data-fui-id="${a.id}">[DEL] PURGE</button>
+        </div>` : ''}
+      `;
+
+      if (!hasActionStrip) {
+        scroll.querySelectorAll('[data-fui-action]').forEach(b => {
+          b.addEventListener('click', () => _fuiTriage(_fuiActive, b.dataset.fuiAction));
+        });
+      } else {
+        _enableActionStrip();
+      }
+
+      // Log the record load
+      const logEl = document.getElementById('fui-syslog-lines');
+      if (logEl) {
+        const div = document.createElement('div');
+        div.className = 'fui-syslog-line fui-sl-bright';
+        div.textContent = `REC_LOAD / UID:${a.id.toString(16).toUpperCase().padStart(4,'0')} / OK`;
+        logEl.appendChild(div);
+        logEl.querySelectorAll('.fui-syslog-line').forEach(l => {
+          l.classList.remove('fui-sl-bright'); l.classList.add('fui-sl-dim');
+        });
+        div.classList.remove('fui-sl-dim'); div.classList.add('fui-sl-bright');
+        const nonHintLog = [...logEl.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+        while (nonHintLog.length > 4) { nonHintLog.shift().remove(); }
+      }
+    }, 160);
+  }, 290);
+}
+
+function _fuiTriage(row, action) {
+  if (!row) return;
+  const id = row.dataset.id;
+  _dossierSpike();
+  fetch(`/action/${id}/${action}`, { method: 'POST' }).then(() => {
+    row.style.transition = 'opacity 0.15s, transform 0.15s';
+    row.style.opacity    = '0';
+    row.style.transform  = 'translateX(8px)';
+    setTimeout(() => {
+      const next = row.nextElementSibling?.classList.contains('fui-index-row')
+        ? row.nextElementSibling
+        : row.previousElementSibling?.classList.contains('fui-index-row')
+          ? row.previousElementSibling
+          : null;
+      row.remove();
+      // Remove from data array
+      const idx = parseInt(row.dataset.idx);
+      _fuiArticles.splice(idx, 1);
+      // Re-index remaining rows
+      document.querySelectorAll('.fui-index-row').forEach((r, i) => r.dataset.idx = i);
+      if (next) _fuiSelectRow(next);
+      else {
+        const scroll = document.getElementById('fui-detail-scroll');
+        if (scroll) { scroll.innerHTML = '<div class="fui-detail-empty">BUFFER_EMPTY / 0x0000</div>'; delete scroll.dataset.watermark; }
+        const idEl    = document.getElementById('fui-detail-id');
+        if (idEl)    idEl.textContent    = '[ AWAIT_SEL ]';
+        const stripEl = document.getElementById('fui-detail-hdr-strip');
+        if (stripEl) stripEl.textContent = 'UID_00000000 ·· CRC:0x000000 ·· RECV:OK ·· T:00.000ms ·· NODE_07 ·· AUTH:PASS';
+        const stateEl = document.getElementById('fui-aux-state');
+        if (stateEl) stateEl.textContent = 'RDY';
+        const revEl   = document.getElementById('fui-aux-rev');
+        if (revEl)   revEl.textContent   = '--';
+        const secEl   = document.getElementById('fui-aux-sector');
+        if (secEl)   secEl.textContent   = '--';
+        const kbdEl   = document.getElementById('fui-kbd-hint');
+        if (kbdEl)   kbdEl.textContent   = '── SEL TO ACT';
+        // Disable action strip on empty buffer
+        document.getElementById('fui-action-strip')
+          ?.querySelectorAll('.fui-act-btn')
+          .forEach(b => { b.disabled = true; });
+        _fuiActive = null;
+      }
+    }, 160);
+  });
+}
+
+function _esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Inbox action strip ────────────────────────────────────────────────────────
+
+function _enableActionStrip() {
+  const strip = document.getElementById('fui-action-strip');
+  if (!strip) return;
+  strip.querySelectorAll('.fui-act-btn').forEach(btn => {
+    btn.disabled = false;
+    btn.onclick = () => { if (_fuiActive) _fuiTriage(_fuiActive, btn.dataset.action); };
+  });
+}
+
+function setupInboxActions() {
+  // Buttons start disabled; _enableActionStrip() activates them on row select.
+  // Wire touch-session so last-opened is recorded
+  setTimeout(() => fetch('/touch-session', { method: 'POST' }).catch(() => {}), 500);
+}
+
+// ── Settings two-column nav ───────────────────────────────────────────────────
+
+function setupSettingsNav() {
+  const navItems = [...document.querySelectorAll('.fui-cfg-nav-item')];
+  const panels   = [...document.querySelectorAll('.fui-cfg-panel')];
+  if (!navItems.length || !panels.length) return;
+
+  function activate(target) {
+    navItems.forEach(n => n.classList.toggle('fui-cfg-active', n.dataset.target === target));
+    panels.forEach(p => p.classList.toggle('fui-cfg-active', p.id === target));
+    try { localStorage.setItem('fui-cfg-tab', target); } catch (_) {}
+  }
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => activate(item.dataset.target));
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(item.dataset.target); }
+    });
+  });
+
+  // Restore stored tab or default to first
+  let stored = null;
+  try { stored = localStorage.getItem('fui-cfg-tab'); } catch (_) {}
+  const valid = panels.some(p => p.id === stored);
+  activate(valid ? stored : panels[0].id);
+}
+
+// ── Dossier degradation — x-ray corrupts with session age + triage ────────────
+const _dossierT0 = Date.now();
+let   _dossierCurrentTier = 0;
+
+const _dossierTiers = [
+  { minMin: 0,  sig: '100%', cls: ''          },
+  { minMin: 15, sig: '82%',  cls: 'dossier-t1' },
+  { minMin: 30, sig: '61%',  cls: 'dossier-t2' },
+  { minMin: 60, sig: '38%',  cls: 'dossier-t3' },
+  { minMin: 90, sig: '12%',  cls: 'dossier-t4' },
+];
+
+function startDossierDegradation() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const img   = document.getElementById('fui-dossier-img');
+  const sigEl = document.getElementById('fui-dossier-sig');
+  if (!img) return;
+
+  function applyTier(tier) {
+    if (tier === _dossierCurrentTier) return;
+    _dossierCurrentTier = tier;
+    const t = _dossierTiers[tier];
+    img.classList.remove(..._dossierTiers.map(t => t.cls).filter(Boolean));
+    if (t.cls) img.classList.add(t.cls);
+    if (sigEl) sigEl.textContent = t.sig;
+  }
+
+  function checkTier() {
+    const elapsed = (Date.now() - _dossierT0) / 60000;
+    let tier = 0;
+    for (let i = _dossierTiers.length - 1; i >= 0; i--) {
+      if (elapsed >= _dossierTiers[i].minMin) { tier = i; break; }
+    }
+    applyTier(tier);
+    setTimeout(checkTier, 30000);
+  }
+  checkTier();
+}
+
+function _dossierSpike() {
+  const overlay = document.getElementById('fui-dossier-overlay');
+  if (!overlay || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  overlay.classList.remove('dossier-spike');
+  void overlay.offsetWidth; // reflow to restart animation
+  overlay.classList.add('dossier-spike');
+  setTimeout(() => overlay.classList.remove('dossier-spike'), 700);
+}
+
+function startGlitchEffects() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  function doGlitch() {
+    const rows = document.querySelectorAll('.fui-index-row');
+    if (rows.length) {
+      const r = rows[Math.floor(Math.random() * rows.length)];
+      r.classList.add('fui-row-glitch');
+      setTimeout(() => r.classList.remove('fui-row-glitch'), 130);
+    }
+    // 1-in-8 chance: brief overexposure on the detail panel
+    if (Math.random() < 0.125) {
+      const detail = document.querySelector('.fui-detail-scroll');
+      if (detail) {
+        detail.style.filter = 'brightness(1.4) contrast(0.9)';
+        setTimeout(() => { detail.style.filter = ''; }, 80);
+      }
+    }
+    // Prime numbers prevent lockstep with flicker (7s) and scanBeam (5.3s)
+    setTimeout(doGlitch, 4700 + Math.random() * 8300);
+  }
+  setTimeout(doGlitch, 2300 + Math.random() * 1800);
+}
+
+// ── Keyword filters ──────────────────────────────────────────────────────────
+function applyKeywordFilters() {
+  const list = document.getElementById('article-list');
+  if (!list) return;
+
+  const emphasize = (list.dataset.emphasize || '').split(',').filter(Boolean);
+  const suppress  = (list.dataset.suppress  || '').split(',').filter(Boolean);
+
+  if (!emphasize.length && !suppress.length) return;
+
+  const cards = list.querySelectorAll('.card');
+  let suppressedCount = 0;
+
+  cards.forEach(card => {
+    const titleEl    = card.querySelector('.card-title');
+    const abstractEl = card.querySelector('.card-abstract');
+    const text       = ((titleEl?.textContent || '') + ' ' + (abstractEl?.textContent || '')).toLowerCase();
+
+    // Suppression check — hide the card if any suppress keyword matches
+    if (suppress.some(kw => text.includes(kw.toLowerCase()))) {
+      card.classList.add('card--suppressed');
+      suppressedCount++;
+      return;
+    }
+
+    // Emphasis — highlight in title and abstract
+    if (emphasize.length) {
+      [titleEl, abstractEl].forEach(el => {
+        if (!el) return;
+        let html = el.innerHTML;
+        emphasize.forEach(kw => {
+          if (!kw) return;
+          const re = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+          html = html.replace(re, '<mark class="kw-emphasis">$1</mark>');
+        });
+        el.innerHTML = html;
+      });
+    }
+  });
+
+  if (suppressedCount > 0) {
+    const notice  = document.createElement('span');
+    notice.className = 'suppressed-notice';
+    notice.textContent = `${suppressedCount} suppressed item${suppressedCount > 1 ? 's' : ''} — click to show`;
+    let revealed = false;
+    notice.addEventListener('click', () => {
+      revealed = !revealed;
+      list.querySelectorAll('.card--suppressed').forEach(c => {
+        c.style.display = revealed ? '' : 'none';
+        if (revealed) c.classList.remove('card--suppressed');
+      });
+      notice.textContent = revealed
+        ? `${suppressedCount} suppressed item${suppressedCount > 1 ? 's' : ''} — click to hide`
+        : `${suppressedCount} suppressed item${suppressedCount > 1 ? 's' : ''} — click to show`;
+    });
+    list.insertBefore(notice, list.firstChild);
+  }
+}
+
+// ── Live system metrics (CPU waveform + core bars + net stats) ───────────────
+function startSysMetrics() {
+  const canvas = document.getElementById('fui-waveform-canvas');
+  if (!canvas) return;
+
+  const cpuHistory = new Array(80).fill(0);
+  let animFrame = null;
+
+  function fmtBps(bps) {
+    if (bps < 1024)       return `${Math.round(bps)}B/s`;
+    if (bps < 1048576)    return `${(bps / 1024).toFixed(1)}K/s`;
+    return `${(bps / 1048576).toFixed(1)}M/s`;
+  }
+
+  function drawWaveform(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+
+    const pts = cpuHistory.length;
+    const stepX = w / (pts - 1);
+
+    // Grid lines at 25%, 50%, 75%
+    ctx.strokeStyle = 'rgba(180,184,255,0.08)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75].forEach(f => {
+      const y = h - f * h;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    });
+
+    // Filled area under curve
+    ctx.beginPath();
+    cpuHistory.forEach((v, i) => {
+      const x = i * stepX;
+      const y = h - (v / 100) * h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo((pts - 1) * stepX, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(180,184,255,0.07)';
+    ctx.fill();
+
+    // Main line
+    ctx.beginPath();
+    cpuHistory.forEach((v, i) => {
+      const x = i * stepX;
+      const y = h - (v / 100) * h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = 'rgba(200,204,255,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(180,184,255,0.6)';
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Leading dot
+    const lx = (pts - 1) * stepX;
+    const ly = h - (cpuHistory[pts - 1] / 100) * h;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(220,224,255,1)';
+    ctx.shadowColor = 'rgba(180,184,255,0.9)';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function renderCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const w   = canvas.clientWidth;
+    const h   = canvas.clientHeight || 36;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width  = w * dpr;
+      canvas.height = h * dpr;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawWaveform(ctx, w, h);
+  }
+
+  function updateBars(cores) {
+    const bars = document.querySelectorAll('.fui-sbar');
+    bars.forEach((bar, i) => {
+      const pct = cores.length > 0 ? cores[i % cores.length] : 0;
+      const px  = Math.max(2, Math.round((pct / 100) * 28));
+      bar.style.height  = px + 'px';
+      bar.style.opacity = 0.35 + (pct / 100) * 0.65;
+    });
+  }
+
+  async function poll() {
+    try {
+      const t0 = performance.now();
+      const d  = await fetch('/api/sysmetrics').then(r => r.json());
+      const latMs = performance.now() - t0;
+
+      cpuHistory.push(d.cpu);
+      if (cpuHistory.length > 80) cpuHistory.shift();
+
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animFrame = requestAnimationFrame(renderCanvas);
+
+      updateBars(d.cpu_cores);
+
+      const cpuEl  = document.getElementById('fui-cpu-pct');
+      const memEl  = document.getElementById('fui-mem-pct');
+      const upEl   = document.getElementById('fui-net-up');
+      const dnEl   = document.getElementById('fui-net-dn');
+      const latEl  = document.getElementById('fui-lat');
+      const freqEl = document.getElementById('fui-freq');
+      const ampEl  = document.getElementById('fui-amp');
+      const dcEl   = document.getElementById('fui-dc');
+
+      if (cpuEl) cpuEl.textContent = d.cpu.toFixed(1);
+      if (memEl) memEl.textContent = d.mem.toFixed(1);
+      if (upEl)  upEl.textContent  = fmtBps(d.net_sent_bps);
+      if (dnEl)  dnEl.textContent  = fmtBps(d.net_recv_bps);
+      if (latEl) latEl.textContent = latMs.toFixed(1);
+
+      // Derived waveform metrics from history
+      const n    = cpuHistory.length;
+      const mean = cpuHistory.reduce((a, b) => a + b, 0) / n;
+      const max  = Math.max(...cpuHistory);
+      const min  = Math.min(...cpuHistory);
+      const amp  = (max - min) / 2 / 100;
+      const dc   = mean / 100;
+      let crossings = 0;
+      for (let i = 1; i < n; i++) {
+        if ((cpuHistory[i - 1] - mean) * (cpuHistory[i] - mean) < 0) crossings++;
+      }
+      const freq = crossings / 2 / (n * 0.9);
+
+      if (freqEl) freqEl.textContent = freq.toFixed(2);
+      if (ampEl)  ampEl.textContent  = amp.toFixed(2);
+      if (dcEl)   dcEl.textContent   = `+${dc.toFixed(2)}`;
+    } catch (_) {}
+    setTimeout(poll, 900);
+  }
+
+  // Initial draw with zeros, then start polling
+  renderCanvas();
+  setTimeout(poll, 300);
+}
+
+// ── Node status cycling ───────────────────────────────────────────────────────
+function startNodeActivity() {
+  const nodeEls = document.querySelectorAll('.fui-node-line[data-node]');
+  if (!nodeEls.length) return;
+  nodeEls.forEach(lineEl => {
+    const stEl = lineEl.querySelector('.fui-nst');
+    if (!stEl) return;
+    function cycle() {
+      const states = ['ACTIVE', 'SYNC', 'IDLE'];
+      const next   = states[Math.floor(Math.random() * states.length)];
+      stEl.textContent = next;
+      stEl.className   = 'fui-nst'
+        + (next === 'IDLE' ? ' fui-nst-dim' : next === 'SYNC' ? ' fui-nst-sync' : '');
+      setTimeout(cycle, 8000 + Math.random() * 22000);
+    }
+    setTimeout(cycle, Math.random() * 8000);
+  });
+}
+
+// ── Session decay: marks body after 30 min for CSS-driven index fatigue ────────
+function startSessionDecay() {
+  setTimeout(() => { document.body.dataset.sessionLong = ''; }, 30 * 60 * 1000);
+}
+
+// ── Single-frame character noise on syslog ────────────────────────────────────
+function startAuxNoise() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function spark() {
+    const lines = [...container.querySelectorAll('.fui-syslog-line:not(.fui-sl-kbd)')];
+    if (lines.length) {
+      const target = lines[Math.floor(Math.random() * lines.length)];
+      target.classList.add('fui-noise-line');
+      setTimeout(() => target.classList.remove('fui-noise-line'), 200);
+    }
+    setTimeout(spark, 45000 + Math.random() * 45000);
+  }
+  setTimeout(spark, 45000 + Math.random() * 45000);
+}
+
+// ── Phase vector drift ────────────────────────────────────────────────────────
+function startPhaseVector() {
+  const el = document.getElementById('fui-phasevec-val');
+  if (!el) return;
+  let phase = 0.381;
+  function drift() {
+    phase += (Math.random() - 0.5) * 0.002;
+    phase = Math.max(0.2, Math.min(0.6, phase));
+    el.textContent = `Ω ${phase.toFixed(3)}φ`;
+    setTimeout(drift, 2800 + Math.random() * 400);
+  }
+  drift();
+}
+
+// ── Aux column PKT counter ────────────────────────────────────────────────────
+function startAuxPkt() {
+  const el = document.getElementById('fui-aux-pkt');
+  if (!el) return;
+  let count = (Math.random() * 512 | 0) + 100;
+  function tick() {
+    count += (Math.random() * 7 | 0) + 1;
+    el.textContent = String(count).padStart(4, '0');
+    setTimeout(tick, 4000 + Math.random() * 6000);
+  }
+  tick();
+}
+
+// ── Periodic checksum log lines ───────────────────────────────────────────────
+function startPeriodicChecksum() {
+  const container = document.getElementById('fui-syslog-lines');
+  if (!container) return;
+  function emit() {
+    const crc   = (Math.random() * 0xFFFF | 0).toString(16).toUpperCase().padStart(4, '0');
+    const delta = (Math.random() * 0.999).toFixed(3);
+    [...container.children].forEach(el => el.classList.add('fui-sl-dim'));
+    const line = document.createElement('div');
+    line.className = 'fui-syslog-line fui-sl-dim';
+    line.textContent = `CHKSUM 0x${crc} / DELTA ${delta} / ST:OK`;
+    container.appendChild(line);
+    const nonHint = [...container.children].filter(el => !el.classList.contains('fui-sl-kbd'));
+    while (nonHint.length > 4) { nonHint.shift().remove(); }
+    setTimeout(emit, 90000 + Math.random() * 30000);
+  }
+  setTimeout(emit, 90000 + Math.random() * 30000);
+}
+
+// ── Keyboard triage shortcuts ─────────────────────────────────────────────────
+// Arrow keys navigate cards. F/I/R/Del triage focused card. Enter opens article.
+function setupKeyboardTriage() {
+  const list = document.getElementById('article-list');
+  if (!list) return;
+
+  let focused = null;
+
+  function focusCard(card) {
+    if (focused) focused.classList.remove('card-focused');
+    focused = card;
+    if (focused) {
+      focused.classList.add('card-focused');
+      focused.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function moveCard(delta) {
+    const cards = [...list.querySelectorAll('.card:not(.card--suppressed)')];
+    const ci    = focused ? cards.indexOf(focused) : -1;
+    const ni    = Math.max(0, Math.min(cards.length - 1, ci + delta));
+    if (cards[ni]) focusCard(cards[ni]);
+  }
+
+  list.addEventListener('mouseover', e => {
+    const card = e.target.closest('.card');
+    if (card) focusCard(card);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveCard(1);  return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); moveCard(-1); return; }
+
+    if (e.key === 'Enter' && focused) {
+      e.preventDefault();
+      const link = focused.querySelector('a.card-title');
+      if (link) window.open(link.href, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (!focused) return;
+    const id = focused.dataset.id;
+    if (!id) return;
+
+    const actions = { f: 'flag', i: 'interesting', r: 'read', Delete: 'delete' };
+    const act = actions[e.key];
+    if (!act) return;
+
+    e.preventDefault();
+    fetch(`/action/${id}/${act}`, { method: 'POST' }).then(() => {
+      const next = focused.nextElementSibling?.closest?.('.card') || focused.previousElementSibling?.closest?.('.card');
+      focused.style.transition = 'opacity 0.15s, transform 0.15s';
+      focused.style.opacity    = '0';
+      focused.style.transform  = 'translateX(6px)';
+      setTimeout(() => {
+        focused?.remove();
+        focused = null;
+        if (next) focusCard(next);
+      }, 160);
+    });
+  });
+}

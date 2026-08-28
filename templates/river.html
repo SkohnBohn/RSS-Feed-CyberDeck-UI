@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if ui_theme == 'fui' %}
+
+{# ── FUI diagnostic split-panel layout ──────────────────────────────────── #}
+
+{% set new_items  = items | selectattr("is_new", "equalto", 1) | list %}
+{% set seen_items = items | selectattr("is_new", "equalto", 0) | list %}
+
+<div class="fui-river-wrapper">
+
+  {# ── Left: compact index panel ─────────────────────────────────────────── #}
+  <div class="fui-index-panel">
+    <div class="fui-panel-hdr">
+      <span>// INPUT_STREAM / NODE_07</span>
+      <span class="fui-recv-badge" id="fui-recv-count">RCV:0x0000</span>
+      <span class="fui-panel-hdr-id">BUF:{{ '%04d' % items|length }} / OK</span>
+    </div>
+
+    <div class="fui-index-list" id="fui-index-list">
+
+      {% if not items %}
+      <div class="fui-detail-empty" style="padding:40px 14px;text-align:left">
+        {% if fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+      </div>
+      {% endif %}
+
+      {% if new_items %}
+      <div class="fui-index-marker">
+        <div class="fui-index-marker-line"></div>
+        <span>NEW // {{ new_items|length }}</span>
+        <div class="fui-index-marker-line"></div>
+      </div>
+      {% endif %}
+
+      {% for a in new_items %}
+      <div class="fui-index-row fui-row-new {% if loop.first and not seen_items %}fui-row-active{% endif %}"
+           data-id="{{ a.id }}" data-idx="{{ loop.index0 }}" tabindex="0">
+        <div class="fui-row-lead">
+          <span class="fui-row-id">{{ '%04X' % a.id }}</span>
+          <span class="fui-row-status fui-status-new">●</span>
+        </div>
+        <div class="fui-row-body">
+          <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
+          <div class="fui-row-sub">SRC_{{ (a.source or 'UNKN')[:6]|upper }}  /  L:{{ (a.language or 'en')|upper }}  /  TS:{{ a.date_published[:7] if a.date_published else '????.??' }}  /  UID:{{ '%04X' % a.id }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if seen_items %}
+      <div class="fui-index-marker">
+        <div class="fui-index-marker-line"></div>
+        <span>PREV{% if last_opened %} // {{ last_opened[:10] }}{% endif %}</span>
+        <div class="fui-index-marker-line"></div>
+      </div>
+      {% endif %}
+
+      {% for a in seen_items %}
+      {% set global_idx = new_items|length + loop.index0 %}
+      <div class="fui-index-row {% if new_items|length == 0 and loop.first %}fui-row-active{% endif %}"
+           data-id="{{ a.id }}" data-idx="{{ global_idx }}" tabindex="0">
+        <div class="fui-row-lead">
+          <span class="fui-row-id">{{ '%04X' % a.id }}</span>
+          <span class="fui-row-status">○</span>
+        </div>
+        <div class="fui-row-body">
+          <div class="fui-row-title">{{ a.title[:68] }}{% if a.title|length > 68 %}…{% endif %}</div>
+          <div class="fui-row-sub">SRC_{{ (a.source or 'UNKN')[:6]|upper }}  /  L:{{ (a.language or 'en')|upper }}  /  TS:{{ a.date_published[:7] if a.date_published else '????.??' }}  /  UID:{{ '%04X' % a.id }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>{# /fui-index-list #}
+    <div class="fui-scan-beam" aria-hidden="true"></div>
+  </div>{# /fui-index-panel #}
+
+  {# ── Right: detail panel ───────────────────────────────────────────────── #}
+  <div class="fui-detail-panel">
+    <div class="fui-panel-hdr fui-detail-hdr">
+      <div class="fui-detail-hdr-top">
+        <span>// RECORD_DETAIL / SEC_04</span>
+        <span class="fui-panel-hdr-id" id="fui-detail-id">[ AWAIT_SEL ]</span>
+      </div>
+      <div class="fui-detail-hdr-strip" id="fui-detail-hdr-strip">
+        UID_00000000 ·· CRC:0x000000 ·· RECV:OK ·· T:00.000ms ·· NODE_07 ·· AUTH:PASS
+      </div>
+    </div>
+
+    <div class="fui-detail-body-row">
+      <div class="fui-detail-scroll" id="fui-detail-scroll">
+        <div class="fui-detail-empty" id="fui-detail-content">
+          {% if items %}AWAIT_SEL // SELECT FROM INDEX{% elif fetch_running %}SYNC_ACTIVE / STANDBY{% else %}BUF_EMPTY / 0x0000{% endif %}
+        </div>
+      </div>
+
+      <div class="fui-aux-column">
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">CLASS</div>
+          <div class="fui-aux-value">B</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">REV</div>
+          <div class="fui-aux-value" id="fui-aux-rev">--</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">SECTOR</div>
+          <div class="fui-aux-value" id="fui-aux-sector">--</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">STATE</div>
+          <div class="fui-aux-value" id="fui-aux-state">RDY</div>
+        </div>
+        <div class="fui-aux-block">
+          <div class="fui-aux-label">PKT</div>
+          <div class="fui-aux-value" id="fui-aux-pkt">0000</div>
+        </div>
+        <div class="fui-aux-phase">
+          <div class="fui-aux-label">PHASE</div>
+          <div class="fui-aux-phase-val">Ω 0.381</div>
+        </div>
+        <div class="fui-aux-vbars" aria-hidden="true">
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+          <span class="fui-aux-bar"></span>
+        </div>
+      </div>
+    </div>{# /fui-detail-body-row #}
+
+    {# Instruments strip #}
+    <div class="fui-instruments">
+      <div class="fui-instruments-hdr">// SIG_ANALYSIS / ST:NOMINAL / ERR:00</div>
+      <div class="fui-instruments-body">
+
+        <div class="fui-signal-array">
+          <div class="fui-signal-label">CPU CORES</div>
+          <div class="fui-signal-bars">
+            <span class="fui-sbar fui-sbar-1"></span>
+            <span class="fui-sbar fui-sbar-2"></span>
+            <span class="fui-sbar fui-sbar-3"></span>
+            <span class="fui-sbar fui-sbar-4"></span>
+            <span class="fui-sbar fui-sbar-5"></span>
+            <span class="fui-sbar fui-sbar-6"></span>
+            <span class="fui-sbar fui-sbar-7"></span>
+            <span class="fui-sbar fui-sbar-8"></span>
+          </div>
+          <div class="fui-signal-sublabel">BAND_04 / CH:A</div>
+        </div>
+
+        <div class="fui-waveform-wrap">
+          <div class="fui-waveform-label">CPU · <span id="fui-cpu-pct">--.-</span>%</div>
+          <canvas class="fui-waveform-canvas" id="fui-waveform-canvas" height="36"></canvas>
+          <div class="fui-waveform-sublabel">FREQ:<span id="fui-freq">--.-</span>Hz · AMP:<span id="fui-amp">0.--</span>V · DC:<span id="fui-dc">+0.--</span></div>
+        </div>
+
+        <div class="fui-phasevec-block">
+          <div class="fui-phasevec-label">PHASE VECTOR</div>
+          <div class="fui-phasevec-val" id="fui-phasevec-val">Ω 0.381φ</div>
+        </div>
+
+        <div class="fui-stats-col">
+          <div class="fui-stat"><span class="fui-stat-k">BUFFER</span><span class="fui-stat-v">{{ items|length }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">NEW</span><span class="fui-stat-v">{{ new_items|length }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">FLAGGED</span><span class="fui-stat-v">{{ counts.flagged }}</span></div>
+          <div class="fui-stat"><span class="fui-stat-k">READ</span><span class="fui-stat-v">{{ counts.read }}</span></div>
+        </div>
+
+        <div class="fui-coords-col">
+          <span>MEM: <span id="fui-mem-pct">--.-</span>%</span>
+          <span>NET↑ <span id="fui-net-up">----</span></span>
+          <span>NET↓ <span id="fui-net-dn">----</span></span>
+          <span>LAT: <span id="fui-lat">--.-</span>ms</span>
+          <span>CRC: 0x{{ '%04X' % (items|length * 137 + 0x4A2F) }}</span>
+        </div>
+
+      </div>{# /fui-instruments-body #}
+    </div>{# /fui-instruments #}
+
+    <div class="fui-syslog">
+      <div class="fui-syslog-hdr">// SYSLOG / PROC_01</div>
+      <div class="fui-syslog-lines" id="fui-syslog-lines">
+        <div class="fui-syslog-line fui-sl-dim">BOOT_SEQ_04 / COMPLETE</div>
+        <div class="fui-syslog-line fui-sl-dim">AUTH_MOD / STATUS:OK</div>
+        <div class="fui-syslog-line">AWAIT_INPUT // OP_01</div>
+        <div class="fui-syslog-line fui-sl-dim fui-sl-kbd" id="fui-kbd-hint">── SEL TO ACT</div>
+      </div>
+    </div>
+
+  </div>{# /fui-detail-panel #}
+</div>{# /fui-river-wrapper #}
+
+{# Embed article data for JS #}
+<script id="fui-data" type="application/json">{{ articles_json | safe }}</script>
+
+{% else %}
+
+{# ── Classic card-list layout ────────────────────────────────────────────── #}
+
+{% macro render_card(a) %}
+<article class="card card--{{ a.content_type or 'article' }}" id="card-{{ a.id }}"
+         data-id="{{ a.id }}"
+         tabindex="0">
+  <div class="card-header">
+    <span class="type-chip type-chip--{{ a.content_type or 'article' }}">{{ (a.content_type or 'article') | upper }}</span>
+    <span class="lang-chip">{{ (a.language or 'en') | upper }}</span>
+    {% if a.url %}
+      <a class="card-title" href="{{ a.url }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+    {% else %}
+      <span class="card-title">{{ a.title }}</span>
+    {% endif %}
+    <span class="card-date">{{ a.date_published[:7] if a.date_published else '' }}</span>
+  </div>
+
+  <div class="card-meta">
+    {{ a.authors or '—' }}{% if a.journal %} · <em>{{ a.journal }}</em>{% endif %}
+  </div>
+
+  {% if a.thumbnail_url and a.content_type in ('video', 'image') %}
+  <div class="card-media">
+    <img class="card-thumb" src="{{ a.thumbnail_url }}" alt="" loading="lazy">
+    {% if a.content_type == 'video' %}
+    <div class="card-media-play">▶</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if a.abstract %}
+  <div class="card-abstract">{{ a.abstract[:300] }}{% if a.abstract | length > 300 %}…{% endif %}</div>
+  {% endif %}
+
+  <div class="card-actions">
+    <button class="btn btn-flag" title="Flagged — read, important (F)"
+      hx-post="/action/{{ a.id }}/flag"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">★ Flag</button>
+
+    <button class="btn" title="Interesting — might read (I)"
+      hx-post="/action/{{ a.id }}/interesting"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">Interesting</button>
+
+    <button class="btn btn-read" title="Mark read (R)"
+      hx-post="/action/{{ a.id }}/read"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">✓ Read</button>
+
+    <button class="btn btn-delete" title="Delete"
+      hx-post="/action/{{ a.id }}/delete"
+      hx-target="#card-{{ a.id }}"
+      hx-swap="outerHTML swap:150ms">✕</button>
+  </div>
+</article>
+{% endmacro %}
+
+<div class="view-header">
+  <h2 class="view-title">River</h2>
+  {% if items %}
+  <span class="view-meta">{{ items | length }} unread</span>
+  {% endif %}
+</div>
+
+{% set new_items  = items | selectattr("is_new", "equalto", 1) | list %}
+{% set seen_items = items | selectattr("is_new", "equalto", 0) | list %}
+
+<div class="article-list" id="article-list"
+     data-emphasize="{{ keywords | selectattr('mode','equalto','emphasize') | map(attribute='keyword') | join(',') }}"
+     data-suppress="{{ keywords | selectattr('mode','equalto','suppress') | map(attribute='keyword') | join(',') }}">
+
+  {% if not items %}
+  <div class="empty-state">
+    {% if fetch_running %}
+      <p>Fetching — check back in a moment.</p>
+    {% else %}
+      <p>Nothing here. Add sources in Settings or hit Fetch Now.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% for a in new_items %}
+  {{ render_card(a) }}
+  {% endfor %}
+
+  {% if seen_items and last_opened %}
+  <div class="river-marker">
+    <div class="river-marker-line"></div>
+    <span class="river-marker-label">Last opened {{ last_opened[:16] }}</span>
+    <div class="river-marker-line"></div>
+  </div>
+  {% endif %}
+
+  {% for a in seen_items %}
+  {{ render_card(a) }}
+  {% endfor %}
+
+  {% if items %}
+  <div class="river-end">
+    <div class="river-end-line"></div>
+    <span class="river-end-label">End of river</span>
+    <div class="river-end-line"></div>
+  </div>
+  {% endif %}
+
+</div>
+
+<div class="fui-syslog classic-syslog">
+  <div class="fui-syslog-hdr">// activity</div>
+  <div class="fui-syslog-lines" id="fui-syslog-lines">
+    <div class="fui-syslog-line fui-sl-dim">session open</div>
+    <div class="fui-syslog-line">stream ready</div>
+  </div>
+</div>
+
+{% endif %}{# /ui_theme == 'fui' #}
+
+{% endblock %}

@@ -3,3 +3,4 @@ feedparser
 httpx
 apscheduler
 pywebview
+psutil
