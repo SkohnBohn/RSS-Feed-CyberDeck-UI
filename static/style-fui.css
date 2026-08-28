@@ -1962,9 +1962,10 @@
   inset:               0;
   background-image:    url('/static/fui-cfg-nav-bg.jpg');
   background-size:     cover;
-  background-position: center 30%;
-  opacity:             0.07;
-  mix-blend-mode:      screen;
+  background-position: center center;
+  opacity:             0.09;
+  mix-blend-mode:      luminosity;
+  filter:              saturate(0.2) brightness(0.9);
   pointer-events:      none;
   z-index:             0;
 }
@@ -2070,10 +2071,9 @@
   position:            absolute;
   inset:               0;
   background-image:    url('/static/fui-cfg-content-bg.jpg');
-  background-size:     55%;
-  background-position: right 10% bottom 8%;
-  background-repeat:   no-repeat;
-  opacity:             0.06;
+  background-size:     cover;
+  background-position: center center;
+  opacity:             0.08;
   mix-blend-mode:      screen;
   pointer-events:      none;
   z-index:             0;
